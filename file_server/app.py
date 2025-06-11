@@ -634,6 +634,7 @@ def get_parsed_txt(file_id):
 @app.route('/api/files/<file_id>/update-parsed-txt', methods=['POST'])
 def update_parsed_txt(file_id):
     """Update text file from parsed content"""
+    print('post heererere')
     try:
         # Get latest file info
         index = build_file_index()

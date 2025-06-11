@@ -350,30 +350,29 @@ function App() {
     if (!currentFileId) return false;
     
     try {
-      // Get the current corrected text
-      if (tableEditor.current && tableEditor.current.generateCorrectedHtml) {
+      let updatedTables = [...tables];
+      
+      // If we have a table editor and we're on a table, get its latest state
+      if (tableEditor.current && tableEditor.current.generateCorrectedHtml && tables.length > 0) {
         const correctedHtml = tableEditor.current.generateCorrectedHtml();
         if (correctedHtml) {
-          // Update the current table in the tables array
-          const updatedTables = [...tables];
           updatedTables[currentTableIndex] = correctedHtml;
-          
-          // Save the text
-          const result = await updateParsedText(currentFileId, {
-            outside_text: outsideText,
-            tables: updatedTables
-          });
-
-          if (!result.success && result.error && result.error.includes('modified externally')) {
-            toast.warning('File was modified externally. Reloading latest version...');
-            await loadFile(currentFileId);
-            return false;
-          }
-
-          return result.success;
         }
       }
-      return false;
+      
+      // Always save the current state
+      const result = await updateParsedText(currentFileId, {
+        outside_text: outsideText,
+        tables: updatedTables
+      });
+
+      if (!result.success && result.error && result.error.includes('modified externally')) {
+        toast.warning('File was modified externally. Reloading latest version...');
+        await loadFile(currentFileId);
+        return false;
+      }
+
+      return result.success;
     } catch (error) {
       console.error('Error saving text:', error);
       toast.error('Error saving changes');
