@@ -132,7 +132,22 @@ def compare_ocr_results(second_model_path, first_model_path, min_score_threshold
         "plain_text_diff": plain_diffs,
         "table_diff": table_diffs
     }
-    
+
+def compare_ocr_results_from_content(second_model_content, first_model_content, min_score_threshold=0.6):
+    second_model_lines, second_model_table = split_text_and_table(second_model_content)
+    first_model_lines, first_model_table = split_text_and_table(first_model_content)
+
+    plain_diffs = compare_plain_text(second_model_lines, first_model_lines, min_score_threshold)
+
+    table_diffs = []
+    if second_model_table and first_model_table:
+        table_diffs = compare_tables(second_model_table, first_model_table)
+
+    return {
+        "plain_text_diff": plain_diffs,
+        "table_diff": table_diffs
+    }
+
 if __name__ == "__main__":
     result = compare_ocr_results("gemini2.0_sample/1.txt", "gemini2.5_sample/1.txt", min_score_threshold=0.6)
     with open("diff_result.json", "w", encoding="utf-8") as f:

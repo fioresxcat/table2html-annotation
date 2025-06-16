@@ -13,6 +13,7 @@ import pdb
 import sys
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from hightlight_diff import compare_ocr_results
+from hightlight_diff import compare_ocr_results_from_content
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
@@ -730,6 +731,35 @@ def get_file_diff(file_id):
         })
     except Exception as e:
         print(f"Error getting file diff: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/diff/compare', methods=['POST'])
+def diff_compare():
+    """Compute diff between two annotation contents (not files)"""
+    try:
+        data = request.json
+        # Expecting: { "gemini_2.0_flash": {"outside_text": ..., "tables": [...]}, "gemini_2.5_flash": { ... } }
+        model_names = MODEL_NAMES
+        contents = {}
+        for model in model_names:
+            model_data = data.get(model)
+            if not model_data:
+                return jsonify({"error": f"Missing data for model {model}"}), 400
+            outside_text = model_data.get("outside_text", "")
+            tables = model_data.get("tables", [])
+            # Reconstruct full text
+            full_text = outside_text
+            for table in tables:
+                full_text = full_text.replace('<TABLE></TABLE>', table, 1)
+            contents[model] = full_text
+        # Compute diff
+        diff_result = compare_ocr_results_from_content(contents[model_names[1]], contents[model_names[0]])
+        return jsonify({
+            "success": True,
+            "diff": diff_result
+        })
+    except Exception as e:
+        print(f"Error in diff_compare: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

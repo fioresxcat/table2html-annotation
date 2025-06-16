@@ -11,7 +11,8 @@ const TableEditor = React.forwardRef(({
   hideInstructions = false,
   model,
   modelIndex,
-  diffInfo
+  diffInfo,
+  onCellEditCommit
 }, ref) => {
   const [tableData, setTableData] = useState({ rows: [], headers: [] });
   const [editingCell, setEditingCell] = useState(null);
@@ -207,6 +208,7 @@ const TableEditor = React.forwardRef(({
     // Ensure the save is triggered
     Promise.resolve().then(() => {
       onExportHtml(correctedHtml);
+      if (onCellEditCommit) onCellEditCommit();
     });
   };
 
@@ -240,6 +242,7 @@ const TableEditor = React.forwardRef(({
     setTableData(newState);
     saveToHistory(newState);
     handleSaveChanges();
+    if (onCellEditCommit) onCellEditCommit();
   };
 
   // Handle adding column
@@ -271,6 +274,7 @@ const TableEditor = React.forwardRef(({
     setTableData(newState);
     saveToHistory(newState);
     handleSaveChanges();
+    if (onCellEditCommit) onCellEditCommit();
   };
 
   // Handle delete column
@@ -295,6 +299,7 @@ const TableEditor = React.forwardRef(({
     if (onExportHtml) {
       onExportHtml(correctedHtml);
     }
+    if (onCellEditCommit) onCellEditCommit();
   };
 
   // Handle merge cells
@@ -350,6 +355,7 @@ const TableEditor = React.forwardRef(({
     if (onExportHtml) {
       onExportHtml(correctedHtml);
     }
+    if (onCellEditCommit) onCellEditCommit();
 
     setSelectedCells([]);
   };
@@ -386,6 +392,7 @@ const TableEditor = React.forwardRef(({
     setTableData(newState);
     saveToHistory(newState);
     handleSaveChanges();
+    if (onCellEditCommit) onCellEditCommit();
   };
 
   // Handle cell selection
@@ -443,6 +450,9 @@ const TableEditor = React.forwardRef(({
         if (autoSave && onExportHtml) {
           const correctedHtml = generateFinalHtml();
           onExportHtml(correctedHtml);
+        }
+        if (onCellEditCommit) {
+          onCellEditCommit();
         }
       }
       
@@ -548,6 +558,7 @@ const TableEditor = React.forwardRef(({
     if (onExportHtml) {
       onExportHtml(correctedHtml);
     }
+    if (onCellEditCommit) onCellEditCommit();
   };
 
   // Handle add row above
@@ -580,6 +591,7 @@ const TableEditor = React.forwardRef(({
     setTableData(newState);
     saveToHistory(newState);
     handleSaveChanges();
+    if (onCellEditCommit) onCellEditCommit();
   };
 
   // Handle add column to the left
@@ -612,6 +624,7 @@ const TableEditor = React.forwardRef(({
     setTableData(newState);
     saveToHistory(newState);
     handleSaveChanges();
+    if (onCellEditCommit) onCellEditCommit();
   };
 
   // Helper to check if a cell should be highlighted

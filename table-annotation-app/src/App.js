@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, AppBar, Toolbar, Typography, Box, Paper, Button, CircularProgress, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid } from '@mui/material';
+import { Container, AppBar, Toolbar, Typography, Box, Paper, Button, CircularProgress, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, ToggleButtonGroup, ToggleButton, TextField } from '@mui/material';
 import TableEditor from './components/TableEditor';
 import TextEditor from './components/TextEditor';
 import TableNavigator from './components/TableNavigator';
@@ -12,6 +12,8 @@ import DownloadIcon from '@mui/icons-material/Download';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import UndoIcon from '@mui/icons-material/Undo';
+import EditIcon from '@mui/icons-material/Edit';
+import TableChartIcon from '@mui/icons-material/TableChart';
 import {
   getFileDetails,
   getImageUrl,
@@ -25,7 +27,8 @@ import {
   getServerStatus,
   getTableFiles,
   excludeFile,
-  getDiffForFile
+  getDiffForFile,
+  postDiffForContent
 } from './services/ApiService';
 import ZoomableImage from './components/ZoomableImage';
 
@@ -62,9 +65,11 @@ function App() {
   const [confirmExcludeOpen, setConfirmExcludeOpen] = useState(false);
   const [lastPageNumber, setLastPageNumber] = useState(1);
   const [dualOutsideText, setDualOutsideText] = useState({ "gemini_2.0_flash": '', "gemini_2.5_flash": '' });
+  const [savedDualOutsideText, setSavedDualOutsideText] = useState({ "gemini_2.0_flash": '', "gemini_2.5_flash": '' });
   const [dualTables, setDualTables] = useState({ "gemini_2.0_flash": [], "gemini_2.5_flash": [] });
   const [dualTableIndices, setDualTableIndices] = useState({ "gemini_2.0_flash": 0, "gemini_2.5_flash": 0 });
   const [diffInfo, setDiffInfo] = useState(null);
+  const [editMode, setEditMode] = useState('text'); // 'text' or 'table'
 
   // Check server status on mount
   useEffect(() => {
@@ -91,6 +96,7 @@ function App() {
     setLoadingStatus(`Loading file...`);
     setCurrentImage(null);
     setDualOutsideText({ "gemini_2.0_flash": '', "gemini_2.5_flash": '' });
+    setSavedDualOutsideText({ "gemini_2.0_flash": '', "gemini_2.5_flash": '' });
     setDualTables({ "gemini_2.0_flash": [], "gemini_2.5_flash": [] });
     setDualTableIndices({ "gemini_2.0_flash": 0, "gemini_2.5_flash": 0 });
     setCurrentAnnotations([]);
@@ -121,6 +127,7 @@ function App() {
           newTables[model] = diffResult.annotations[model]?.tables || [];
         }
         setDualOutsideText(newOutside);
+        setSavedDualOutsideText(newOutside);
         setDualTables(newTables);
         setDiffInfo(diffResult.diff || null);
       }
@@ -589,7 +596,7 @@ function App() {
     }
   };
 
-  // Update handleSaveSingleModel to always get the latest HTML from the TableEditor ref before saving
+  // Update handleSaveSingleModel to call postDiffForContent with the current in-memory content for both models after saving, and update diffInfo with the result. This ensures diff highlighting is always up to date after pressing Save.
   const handleSaveSingleModel = async (model) => {
     if (!currentFileId) return;
     setIsLoading(true);
@@ -612,6 +619,22 @@ function App() {
         toast.error(`Error saving ${model} annotation file`);
       } else {
         toast.success(`${model} annotation saved successfully`);
+        // Update savedDualOutsideText for BOTH models to reflect the latest in-memory state
+        setSavedDualOutsideText({ ...dualOutsideText, [model]: dualOutsideText[model] });
+        // Recompute diff using in-memory content for both models
+        try {
+          const diffPayload = {};
+          for (const m of MODEL_NAMES) {
+            diffPayload[m] = {
+              outside_text: dualOutsideText[m],
+              tables: dualTables[m]
+            };
+          }
+          const diffResult = await postDiffForContent(diffPayload);
+          if (diffResult.success && diffResult.diff) {
+            setDiffInfo(diffResult.diff);
+          }
+        } catch (e) { /* ignore */ }
       }
       // Update state with latest tables
       setDualTables(prev => ({ ...prev, [model]: latestTables }));
@@ -622,9 +645,27 @@ function App() {
     }
   };
 
+  // Add this function in App.js
+  const handleTableCellEditCommit = async () => {
+    // Use the current in-memory dualOutsideText and dualTables
+    try {
+      const payload = {};
+      for (const model of MODEL_NAMES) {
+        payload[model] = {
+          outside_text: dualOutsideText[model],
+          tables: dualTables[model]
+        };
+      }
+      const diffResult = await postDiffForContent(payload);
+      if (diffResult.success && diffResult.diff) {
+        setDiffInfo(diffResult.diff);
+      }
+    } catch (e) { /* ignore */ }
+  };
+
   return (
     <ThemeProvider theme={theme}>
-      <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+      <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ flexGrow: 1, display: 'flex', overflow: 'hidden' }}>
           {!currentFile ? (
             <FileBrowser 
@@ -632,150 +673,268 @@ function App() {
               initialPage={lastPageNumber}
             />
         ) : (
-            <Box sx={{ width: '100%', height: '100%', p: 2 }}>
-              {/* File Navigation */}
-              <Paper sx={{ mb: 2, p: 1 }}>
-              <Box sx={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                  alignItems: 'center'
-              }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <Typography variant="h6">
-                    {currentFile.name}
+            <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
+              {/* Top Navigation Bar */}
+              <Paper sx={{ p: 0.5, display: 'flex', alignItems: 'center', gap: 1, minHeight: 0 }}>
+                <Button
+                  startIcon={<ArrowBackIcon fontSize="small" />}
+                  onClick={handleBackToFiles}
+                  variant="outlined"
+                  size="small"
+                  sx={{ minWidth: 0, px: 1 }}
+                >
+                  Back
+                </Button>
+                
+                <Typography variant="subtitle1" sx={{ flex: 1, fontWeight: 500, fontSize: 16 }}>
+                  {currentFile.name} 
+                  <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                    (File {currentFile.pagination?.fileIndex} of {currentFile.pagination?.totalFiles}, 
+                    Page {currentFile.pagination?.currentPage})
                   </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ ml: 2 }}>
-                      (File {currentFile.pagination?.fileIndex} of {currentFile.pagination?.totalFiles}, 
-                      Page {currentFile.pagination?.currentPage})
-                  </Typography>
-                </Box>
-                  <Box sx={{ display: 'flex', gap: 1 }}>
-                    <Button
-                      variant="outlined"
-                      startIcon={<ArrowBackIcon />}
-                      onClick={handleBackToFiles}
-                    >
-                      Back to Files
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<UndoIcon />}
-                      onClick={handleUndo}
-                      disabled={!tableEditorRefs.current[currentFile.model]?.canUndo()}
-                    >
-                      Undo
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      startIcon={<NavigateBeforeIcon />}
-                      onClick={handlePrevFile}
-                      disabled={isLoading}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      endIcon={<NavigateNextIcon />}
-                      onClick={handleNextFile}
-                      disabled={isLoading}
-                    >
-                      Next
-                    </Button>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            startIcon={<DeleteIcon />}
-                            onClick={handleOpenExcludeDialog}
-                    >
-                      Exclude
-                          </Button>
-                        </Box>
-                      </Box>
+                </Typography>
+
+                <Button
+                  startIcon={<NavigateBeforeIcon fontSize="small" />}
+                  onClick={handlePrevFile}
+                  disabled={isLoading}
+                  variant="outlined"
+                  size="small"
+                  sx={{ minWidth: 0, px: 1 }}
+                >
+                  Previous
+                </Button>
+
+                <Button
+                  endIcon={<NavigateNextIcon fontSize="small" />}
+                  onClick={handleNextFile}
+                  disabled={isLoading}
+                  variant="outlined"
+                  size="small"
+                  sx={{ minWidth: 0, px: 1 }}
+                >
+                  Next
+                </Button>
+
+                <ToggleButtonGroup
+                  value={editMode}
+                  exclusive
+                  onChange={(e, newMode) => newMode && setEditMode(newMode)}
+                  aria-label="edit mode"
+                  size="small"
+                  sx={{ height: 32 }}
+                >
+                  <ToggleButton value="text" aria-label="text mode" size="small" sx={{ px: 1, minWidth: 0 }}>
+                    <EditIcon fontSize="small" />
+                    <Typography sx={{ ml: 0.5, fontSize: 13 }}>Text</Typography>
+                  </ToggleButton>
+                  <ToggleButton value="table" aria-label="table mode" size="small" sx={{ px: 1, minWidth: 0 }}>
+                    <TableChartIcon fontSize="small" />
+                    <Typography sx={{ ml: 0.5, fontSize: 13 }}>Table</Typography>
+                  </ToggleButton>
+                </ToggleButtonGroup>
+
+                <Button
+                  startIcon={<DeleteIcon fontSize="small" />}
+                  onClick={() => setConfirmExcludeOpen(true)}
+                  color="error"
+                  variant="outlined"
+                  size="small"
+                  sx={{ minWidth: 0, px: 1 }}
+                >
+                  Exclude
+                </Button>
               </Paper>
 
-              {/* Main Content */}
-              <Grid container spacing={2} sx={{ height: 'calc(100% - 80px)' }}>
-                {/* Left side - Image (smaller) */}
-                <Grid item xs={12} md={4}>
-                  <Paper sx={{ height: '100%', overflow: 'hidden' }}>
+              {/* Main Content Area */}
+              <Grid container spacing={1} sx={{ flex: 1, overflow: 'hidden', height: '100%' }}>
+                {/* Left side - Image */}
+                <Grid item xs={12} md={4} sx={{ height: '100%' }}>
+                  <Paper sx={{ height: '100%', overflow: 'hidden', p: 0.5 }}>
                     {currentImage && (
                       <ZoomableImage src={currentImage} alt="Current image" />
                     )}
                   </Paper>
                 </Grid>
 
-                {/* Right side - Dual Text and Table editors */}
-                <Grid item xs={12} md={8}>
-                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {/* Dual Text Editors */}
-                    <Grid container spacing={2} sx={{ flex: 0.67, height: '40%' }}>
-                      {MODEL_NAMES.map((model, idx) => (
-                        <Grid item xs={6} key={model}>
-                          <Paper sx={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
-                              <Typography variant="subtitle2">{model}</Typography>
-                              <Button
-                                variant="contained"
-                                color="primary"
-                                size="small"
-                                onClick={() => handleSaveSingleModel(model)}
-                                disabled={isLoading}
-                              >
-                                Save File
-                              </Button>
-                            </Box>
-                            <TextEditor 
-                              text={dualOutsideText[model]}
-                              onTextChange={text => handleDualTextChange(model, text)}
-                              model={model}
-                              modelIndex={idx}
-                              diffInfo={diffInfo}
-                            />
+                {/* Right side - Editors */}
+                <Grid item xs={12} md={8} sx={{ height: '100%' }}>
+                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                    {editMode === 'text' ? (
+                      <Box sx={{ 
+                        height: '100%', 
+                        display: 'flex', 
+                        flexDirection: 'column',
+                        overflow: 'hidden'
+                      }}>
+                        {/* Text Editing Mode */}
+                        <Box sx={{ 
+                          flex: '0 0 50%', // This forces exactly 50% height
+                          overflow: 'hidden',
+                          mb: 0.5
+                        }}>
+                          <Paper sx={{ 
+                            height: '100%',
+                            p: 1, 
+                            display: 'flex', 
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                            minHeight: 0
+                          }}>
+                            <Grid container spacing={1} sx={{ flex: 1, overflow: 'hidden' }}>
+                              {MODEL_NAMES.map((model, idx) => (
+                                <Grid item xs={6} key={model} sx={{ height: '100%' }}>
+                                  <Box sx={{ 
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    overflow: 'hidden'
+                                  }}>
+                                    <Box sx={{ 
+                                      display: 'flex', 
+                                      justifyContent: 'space-between', 
+                                      alignItems: 'center',
+                                      mb: 0.5
+                                    }}>
+                                      <Typography variant="caption" sx={{ fontWeight: 500 }}>{'Text Editor: ' + model}</Typography>
+                                      <Button
+                                        variant="contained"
+                                        color="primary"
+                                        size="small"
+                                        onClick={() => handleSaveSingleModel(model)}
+                                        disabled={isLoading}
+                                        sx={{ minWidth: 0, px: 1, fontSize: 12 }}
+                                      >
+                                        Save
+                                      </Button>
+                                    </Box>
+                                    <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                                      <TextField
+                                        multiline
+                                        fullWidth
+                                        value={dualOutsideText[model]}
+                                        onChange={(e) => handleDualTextChange(model, e.target.value)}
+                                        variant="outlined"
+                                        sx={{
+                                          height: '100%',
+                                          '& .MuiInputBase-root': {
+                                            height: '100%',
+                                            fontFamily: 'monospace',
+                                            fontSize: 13
+                                          },
+                                          '& .MuiInputBase-inputMultiline': {
+                                            height: '100% !important',
+                                            overflowY: 'auto !important'
+                                          }
+                                        }}
+                                      />
+                                    </Box>
+                                  </Box>
+                                </Grid>
+                              ))}
+                            </Grid>
                           </Paper>
-                        </Grid>
-                      ))}
-                    </Grid>
-                    {/* Dual Table Editors */}
-                    <Grid container spacing={2} sx={{ flex: 1, height: '60%' }}>
-                      {MODEL_NAMES.map((model, idx) => (
-                        <Grid item xs={6} key={model}>
-                          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                            <Typography variant="subtitle2" sx={{ p: 1 }}>{model}</Typography>
-                            {(dualTables[model] && dualTables[model].length > 0) ? (
-                              <>
-                                <TableNavigator
-                                  currentTable={dualTableIndices[model]}
-                                  totalTables={dualTables[model].length}
-                                  onNavigate={dir => handleDualTableNavigation(model, dir)}
-                                />
-                                <Box sx={{ flex: 1, overflow: 'auto' }}>
-                        <TableEditor
-                                    ref={el => tableEditorRefs.current[model] = el}
-                                    tableHtml={dualTables[model][dualTableIndices[model]]}
-                                    onExportHtml={html => handleDualTableChange(model, html)}
-                                    model={model}
-                                    modelIndex={idx}
-                                    diffInfo={diffInfo}
-                                    // ...other props as needed...
-                        />
+                        </Box>
+                        
+                        {/* Text View Mode with Highlighting */}
+                        <Box sx={{ 
+                          flex: '0 0 50%', // This forces exactly 50% height
+                          overflow: 'hidden'
+                        }}>
+                          <Paper sx={{ 
+                            height: '100%',
+                            p: 1, 
+                            display: 'flex', 
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                            minHeight: 0
+                          }}>
+                            <Grid container spacing={1} sx={{ flex: 1, overflow: 'hidden' }}>
+                              {MODEL_NAMES.map((model, idx) => (
+                                <Grid item xs={6} key={model} sx={{ height: '100%' }}>
+                                  <Box sx={{ 
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    overflow: 'hidden'
+                                  }}>
+                                    <Typography variant="caption" sx={{ mb: 0.5, fontWeight: 500 }}>{'Text View: ' + model}</Typography>
+                                    <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                                      <TextEditor
+                                        text={savedDualOutsideText[model]}
+                                        onTextChange={() => {}} // read-only
+                                        model={model}
+                                        modelIndex={idx}
+                                        diffInfo={diffInfo}
+                                        readOnly={true}
+                                      />
+                                    </Box>
+                                  </Box>
+                                </Grid>
+                              ))}
+                            </Grid>
+                          </Paper>
+                        </Box>
                       </Box>
-                              </>
-                  ) : (
-                              <Box sx={{ p: 2, textAlign: 'center' }}>
-                                <Typography color="textSecondary">No tables found in the text</Typography>
-                </Box>
-              )}
-            </Paper>
-                        </Grid>
-                      ))}
-                    </Grid>
+                    ) : (
+                      <>
+                        {/* Table Editing Mode */}
+                        <Paper sx={{ flex: 1, p: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+                          <Grid container spacing={1} sx={{ flex: 1 }}>
+                            {MODEL_NAMES.map((model, idx) => (
+                              <Grid item xs={6} key={model}>
+                                <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                                    <Typography variant="caption" sx={{ fontWeight: 500 }}>{'Table Editor: ' + model}</Typography>
+                                    <Button
+                                      variant="contained"
+                                      color="primary"
+                                      size="small"
+                                      onClick={() => handleSaveSingleModel(model)}
+                                      disabled={isLoading}
+                                      sx={{ minWidth: 0, px: 1, fontSize: 12 }}
+                                    >
+                                      Save
+                                    </Button>
+                                  </Box>
+                                  {(dualTables[model] && dualTables[model].length > 0) ? (
+                                    <>
+                                      <TableNavigator
+                                        currentTable={dualTableIndices[model]}
+                                        totalTables={dualTables[model].length}
+                                        onNavigate={dir => handleDualTableNavigation(model, dir)}
+                                      />
+                                      <Box sx={{ flex: 1, overflow: 'auto' }}>
+                                        <TableEditor
+                                          ref={el => tableEditorRefs.current[model] = el}
+                                          tableHtml={dualTables[model][dualTableIndices[model]]}
+                                          onExportHtml={html => handleDualTableChange(model, html)}
+                                          model={model}
+                                          modelIndex={idx}
+                                          diffInfo={diffInfo}
+                                          onCellEditCommit={handleTableCellEditCommit}
+                                        />
+                                      </Box>
+                                    </>
+                                  ) : (
+                                    <Box sx={{ p: 1, textAlign: 'center' }}>
+                                      <Typography color="textSecondary" variant="caption">No tables found in the text</Typography>
+                                    </Box>
+                                  )}
+                                </Box>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Paper>
+                      </>
+                    )}
                   </Box>
                 </Grid>
               </Grid>
-          </Box>
-        )}
-      </Box>
-      
+            </Box>
+          )}
+        </Box>
+        
         {/* Loading overlay */}
         {isLoading && (
           <Box

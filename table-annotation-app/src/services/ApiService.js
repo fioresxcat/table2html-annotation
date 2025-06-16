@@ -222,6 +222,27 @@ export const getDiffForFile = async (fileId) => {
   }
 };
 
+/**
+ * Post current annotation content for both models to get the diff (without saving)
+ * @param {object} content - { gemini_2.0_flash: {outside_text, tables}, gemini_2.5_flash: {outside_text, tables} }
+ * @returns {Promise} - Promise with the API response
+ */
+export const postDiffForContent = async (content) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/diff/compare`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(content),
+    });
+    return await response.json();
+  } catch (error) {
+    console.error('Error posting diff for content:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default {
   getTableFiles,
   getFileDetails,
@@ -234,5 +255,6 @@ export default {
   updateDualParsedText,
   excludeFile,
   downloadAllAnnotations,
-  getServerStatus
+  getServerStatus,
+  postDiffForContent
 }; 

@@ -26,12 +26,12 @@ const HIGHLIGHT_COLORS = [
   'green'  // model 1: green text
 ];
 
-const TextEditor = ({ text, onTextChange, model, diffInfo, modelIndex }) => {
+const TextEditor = ({ text, onTextChange, model, diffInfo, modelIndex, readOnly = false }) => {
   const [editMode, setEditMode] = useState(false);
   const [editValue, setEditValue] = useState(text);
   const [diffViewKey, setDiffViewKey] = useState(0);
   const textFieldRef = useRef(null);
-  const [pendingEditLine, setPendingEditLine] = useState(null); // use state instead of ref
+  const [pendingEditLine, setPendingEditLine] = useState(null);
 
   // Sync editValue with text prop if text changes and not editing
   useEffect(() => {
@@ -40,7 +40,7 @@ const TextEditor = ({ text, onTextChange, model, diffInfo, modelIndex }) => {
 
   // After entering edit mode, set cursor to start of clicked line
   useEffect(() => {
-    if (editMode && pendingEditLine !== null && textFieldRef.current) {
+    if (!readOnly && editMode && pendingEditLine !== null && textFieldRef.current) {
       setTimeout(() => {
         const textarea = textFieldRef.current.querySelector('textarea');
         if (textarea) {
@@ -56,7 +56,7 @@ const TextEditor = ({ text, onTextChange, model, diffInfo, modelIndex }) => {
         setPendingEditLine(null); // clear after use
       }, 0);
     }
-  }, [editMode, pendingEditLine]);
+  }, [editMode, pendingEditLine, readOnly]);
 
   // Split text into lines
   const lines = text.split('\n');
@@ -107,9 +107,7 @@ const TextEditor = ({ text, onTextChange, model, diffInfo, modelIndex }) => {
     <Box
       sx={{
         width: '100%',
-        maxHeight: 200,
-        minHeight: 80,
-        overflowY: 'auto',
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         background: '#fff',
@@ -117,11 +115,12 @@ const TextEditor = ({ text, onTextChange, model, diffInfo, modelIndex }) => {
         border: '1px solid #e0e0e0',
         p: 1,
         fontFamily: 'monospace',
-        fontSize: 14
+        fontSize: 14,
+        overflow: 'hidden'
       }}
     >
-      {/* If in edit mode, show TextField, else show diff view */}
-      {editMode ? (
+      {/* If in edit mode and not readOnly, show TextField, else show diff view */}
+      {(!readOnly && editMode) ? (
         <TextField
           multiline
           fullWidth
@@ -137,22 +136,32 @@ const TextEditor = ({ text, onTextChange, model, diffInfo, modelIndex }) => {
           variant="outlined"
           sx={{
             flex: 1,
-            maxHeight: 200,
-            minHeight: 80,
-            overflowY: 'auto',
-            fontFamily: 'monospace',
-            fontSize: 14
+            '& .MuiInputBase-root': {
+              height: '100%'
+            },
+            '& .MuiInputBase-inputMultiline': {
+              height: '100% !important',
+              overflowY: 'auto !important'
+            }
           }}
         />
       ) : diffInfo ? (
-        <Box key={diffViewKey}>
+        <Box 
+          key={diffViewKey} 
+          sx={{ 
+            flex: 1,
+            overflowY: 'auto'
+          }}
+        >
           {lineDiffs.map((obj, idx) => (
             <div
               key={idx}
-              style={{ cursor: 'text' }}
+              style={{ cursor: readOnly ? 'default' : 'text' }}
               onClick={() => {
-                setPendingEditLine(idx);
-                setEditMode(true);
+                if (!readOnly) {
+                  setPendingEditLine(idx);
+                  setEditMode(true);
+                }
               }}
             >
               {renderLine(obj.line, obj, idx)}
@@ -166,13 +175,16 @@ const TextEditor = ({ text, onTextChange, model, diffInfo, modelIndex }) => {
           value={text}
           onChange={(e) => onTextChange(e.target.value)}
           variant="outlined"
+          disabled={readOnly}
           sx={{
             flex: 1,
-            maxHeight: 200,
-            minHeight: 80,
-            overflowY: 'auto',
-            fontFamily: 'monospace',
-            fontSize: 14
+            '& .MuiInputBase-root': {
+              height: '100%'
+            },
+            '& .MuiInputBase-inputMultiline': {
+              height: '100% !important',
+              overflowY: 'auto !important'
+            }
           }}
         />
       )}
