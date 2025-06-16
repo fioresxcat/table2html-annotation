@@ -67,16 +67,16 @@ export const getImageBase64 = async (fileId) => {
 };
 
 /**
- * Get parsed text content
+ * Get parsed text content for both model annotations
  * @param {string} fileId - The ID of the file
  * @returns {Promise} - Promise with the API response
  */
-export const getParsedText = async (fileId) => {
+export const getDualParsedText = async (fileId) => {
   try {
     const response = await fetch(`${API_BASE_URL}/files/${fileId}/parsed-txt`);
     return await response.json();
   } catch (error) {
-    console.error('Error fetching parsed text:', error);
+    console.error('Error fetching dual parsed text:', error);
     return { success: false, error: error.message };
   }
 };
@@ -141,12 +141,12 @@ export const exportText = async (fileId, textContent) => {
 };
 
 /**
- * Update the parsed text file
+ * Update the parsed text files for both model annotations
  * @param {string} fileId - The ID of the file
- * @param {string} content - The updated text content
+ * @param {object} content - The updated text content for both models
  * @returns {Promise} - Promise with the API response
  */
-export const updateParsedText = async (fileId, content) => {
+export const updateDualParsedText = async (fileId, content) => {
   try {
     const response = await fetch(`${API_BASE_URL}/files/${fileId}/update-parsed-txt`, {
       method: 'POST',
@@ -157,7 +157,7 @@ export const updateParsedText = async (fileId, content) => {
     });
     return await response.json();
   } catch (error) {
-    console.error('Error updating text:', error);
+    console.error('Error updating dual parsed text:', error);
     return { success: false, error: error.message };
   }
 };
@@ -207,16 +207,31 @@ export const getServerStatus = async () => {
   }
 };
 
+/**
+ * Get diff and both annotation contents for a file
+ * @param {string} fileId - The ID of the file
+ * @returns {Promise} - Promise with the API response
+ */
+export const getDiffForFile = async (fileId) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/files/${fileId}/diff`);
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching diff for file:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 export default {
   getTableFiles,
   getFileDetails,
   getImageUrl,
   getImageBase64,
-  getParsedText,
+  getDualParsedText,
   getAnnotations,
   saveAnnotations,
   exportText,
-  updateParsedText,
+  updateDualParsedText,
   excludeFile,
   downloadAllAnnotations,
   getServerStatus

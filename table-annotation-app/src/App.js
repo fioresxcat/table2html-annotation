@@ -16,17 +16,20 @@ import {
   getFileDetails,
   getImageUrl,
   getImageBase64,
-  getParsedText,
+  getDualParsedText,
   getAnnotations,
   saveAnnotations,
   exportText,
-  updateParsedText,
+  updateDualParsedText,
   downloadAllAnnotations,
   getServerStatus,
   getTableFiles,
-  excludeFile
+  excludeFile,
+  getDiffForFile
 } from './services/ApiService';
 import ZoomableImage from './components/ZoomableImage';
+
+const MODEL_NAMES = ["gemini_2.0_flash", "gemini_2.5_flash"];
 
 // Create a theme
 const theme = createTheme({
@@ -58,6 +61,10 @@ function App() {
   const [mobileView, setMobileView] = useState('both');
   const [confirmExcludeOpen, setConfirmExcludeOpen] = useState(false);
   const [lastPageNumber, setLastPageNumber] = useState(1);
+  const [dualOutsideText, setDualOutsideText] = useState({ "gemini_2.0_flash": '', "gemini_2.5_flash": '' });
+  const [dualTables, setDualTables] = useState({ "gemini_2.0_flash": [], "gemini_2.5_flash": [] });
+  const [dualTableIndices, setDualTableIndices] = useState({ "gemini_2.0_flash": 0, "gemini_2.5_flash": 0 });
+  const [diffInfo, setDiffInfo] = useState(null);
 
   // Check server status on mount
   useEffect(() => {
@@ -75,78 +82,47 @@ function App() {
     }
   };
 
-  // Add ref to access TableEditor methods
-  const tableEditor = useRef(null);
+  // Add refs for each TableEditor (per model)
+  const tableEditorRefs = useRef({});
 
-  // Load a file by ID
+  // Load a file by ID (dual annotation)
   const loadFile = async (fileId) => {
     setIsLoading(true);
     setLoadingStatus(`Loading file...`);
     setCurrentImage(null);
-    setOutsideText('');
-    setTables([]);
-    setCurrentTableIndex(0);
+    setDualOutsideText({ "gemini_2.0_flash": '', "gemini_2.5_flash": '' });
+    setDualTables({ "gemini_2.0_flash": [], "gemini_2.5_flash": [] });
+    setDualTableIndices({ "gemini_2.0_flash": 0, "gemini_2.5_flash": 0 });
     setCurrentAnnotations([]);
+    setDiffInfo(null);
 
     try {
-      // Get file details
       const fileDetails = await getFileDetails(fileId);
       if (!fileDetails.success) {
-        console.error('Error loading file details');
         setIsLoading(false);
         return;
       }
-
-      // Set current file with pagination info
-      setCurrentFile({
-        ...fileDetails.file,
-        pagination: fileDetails.pagination
-      });
-      // Store the page number
-      if (fileDetails.pagination?.currentPage) {
-        setLastPageNumber(fileDetails.pagination.currentPage);
-      }
+      setCurrentFile({ ...fileDetails.file, pagination: fileDetails.pagination });
+      if (fileDetails.pagination?.currentPage) setLastPageNumber(fileDetails.pagination.currentPage);
       setCurrentFileId(fileId);
-
-      // Get image (either direct URL or base64)
       try {
         const imageResult = await getImageBase64(fileId);
-        if (imageResult.success) {
-          setCurrentImage(imageResult.imageData);
-        }
-      } catch (error) {
-        console.error('Error loading image, falling back to URL:', error);
-        // Fallback to direct URL
+        if (imageResult.success) setCurrentImage(imageResult.imageData);
+      } catch {
         setCurrentImage(getImageUrl(fileId));
       }
-
-      // Load text content if available
-      if (fileDetails.file.hasTxt) {
-        try {
-          const textResult = await getParsedText(fileId);
-          if (textResult.success) {
-            setOutsideText(textResult.outside_text);
-            setTables(textResult.tables);
-          } else {
-            toast.error('Error loading text content');
-          }
-        } catch (error) {
-          console.error('Error loading text:', error);
-          toast.error(`Error loading text: ${error.message}`);
+      // Load both annotation contents and diff info
+      const diffResult = await getDiffForFile(fileId);
+      if (diffResult.success && diffResult.annotations) {
+        const newOutside = {};
+        const newTables = {};
+        for (const model of MODEL_NAMES) {
+          newOutside[model] = diffResult.annotations[model]?.outside_text || '';
+          newTables[model] = diffResult.annotations[model]?.tables || [];
         }
-      } else {
-        toast.warning('No text file available for this image');
-      }
-
-      // Load annotations if available
-      try {
-        const annotationsResult = await getAnnotations(fileId);
-        if (annotationsResult.success) {
-          setCurrentAnnotations(annotationsResult.annotations.corrections || []);
-        }
-      } catch (error) {
-        console.error('Error loading annotations:', error);
-        toast.error(`Error loading annotations: ${error.message}`);
+        setDualOutsideText(newOutside);
+        setDualTables(newTables);
+        setDiffInfo(diffResult.diff || null);
       }
     } catch (error) {
       console.error('Error loading file:', error);
@@ -187,9 +163,9 @@ function App() {
     
     try {
       // Always save before navigating
-      setIsLoading(true);
-      setLoadingStatus('Saving changes...');
-      await saveCurrentText();
+        setIsLoading(true);
+        setLoadingStatus('Saving changes...');
+      await saveDualCurrentText();
       
       setLoadingStatus('Loading next file...');
       
@@ -220,9 +196,9 @@ function App() {
     
     try {
       // Always save before navigating
-      setIsLoading(true);
-      setLoadingStatus('Saving changes...');
-      await saveCurrentText();
+        setIsLoading(true);
+        setLoadingStatus('Saving changes...');
+      await saveDualCurrentText();
       
       setLoadingStatus('Loading previous file...');
       
@@ -265,8 +241,8 @@ function App() {
       setCurrentAnnotations(updatedAnnotations);
       
       // No need to save annotations to JSON - just trigger the table save
-      if (tableEditor.current && tableEditor.current.generateCorrectedHtml) {
-        const correctedHtml = tableEditor.current.generateCorrectedHtml();
+      if (tableEditorRefs.current[currentFile.model] && tableEditorRefs.current[currentFile.model].generateCorrectedHtml) {
+        const correctedHtml = tableEditorRefs.current[currentFile.model].generateCorrectedHtml();
         if (correctedHtml) {
           handleTableChange(correctedHtml);
         }
@@ -291,7 +267,7 @@ function App() {
       // Check if this file has a text file
       if (fileDetails.file.hasTxt) {
         // Update the original text file
-        const result = await updateParsedText(currentFileId, {
+        const result = await updateDualParsedText(currentFileId, {
           outside_text: textContent,
           tables: tables
         });
@@ -328,15 +304,15 @@ function App() {
       if (currentFileId) {
         setIsLoading(true);
         setLoadingStatus('Saving changes...');
-        await saveCurrentText();
-      }
-      
-      setCurrentFile(null);
-      setCurrentFileId(null);
-      setCurrentImage(null);
+        await saveDualCurrentText();
+    }
+    
+    setCurrentFile(null);
+    setCurrentFileId(null);
+    setCurrentImage(null);
       setOutsideText('');
       setTables([]);
-      setCurrentAnnotations([]);
+    setCurrentAnnotations([]);
     } catch (error) {
       console.error('Error saving before navigation:', error);
       toast.error('Error saving changes');
@@ -353,15 +329,15 @@ function App() {
       let updatedTables = [...tables];
       
       // If we have a table editor and we're on a table, get its latest state
-      if (tableEditor.current && tableEditor.current.generateCorrectedHtml && tables.length > 0) {
-        const correctedHtml = tableEditor.current.generateCorrectedHtml();
+      if (tableEditorRefs.current[currentFile.model] && tableEditorRefs.current[currentFile.model].generateCorrectedHtml && tables.length > 0) {
+        const correctedHtml = tableEditorRefs.current[currentFile.model].generateCorrectedHtml();
         if (correctedHtml) {
           updatedTables[currentTableIndex] = correctedHtml;
         }
       }
       
       // Always save the current state
-      const result = await updateParsedText(currentFileId, {
+      const result = await updateDualParsedText(currentFileId, {
         outside_text: outsideText,
         tables: updatedTables
       });
@@ -369,7 +345,7 @@ function App() {
       if (!result.success && result.error && result.error.includes('modified externally')) {
         toast.warning('File was modified externally. Reloading latest version...');
         await loadFile(currentFileId);
-        return false;
+      return false;
       }
 
       return result.success;
@@ -400,15 +376,15 @@ function App() {
       switch (event.key) {
         case 'ArrowLeft':
           // Always save before navigating
-          setIsLoading(true);
-          setLoadingStatus('Saving changes...');
+            setIsLoading(true);
+            setLoadingStatus('Saving changes...');
           await saveCurrentText();
           handlePrevFile();
           break;
         case 'ArrowRight':
           // Always save before navigating
-          setIsLoading(true);
-          setLoadingStatus('Saving changes...');
+            setIsLoading(true);
+            setLoadingStatus('Saving changes...');
           await saveCurrentText();
           handleNextFile();
           break;
@@ -519,15 +495,15 @@ function App() {
 
       // Make sure we get the latest table content
       let finalTables = [...tables];
-      if (tableEditor.current && tableEditor.current.generateCorrectedHtml) {
-        const correctedHtml = tableEditor.current.generateCorrectedHtml();
+      if (tableEditorRefs.current[currentFile.model] && tableEditorRefs.current[currentFile.model].generateCorrectedHtml) {
+        const correctedHtml = tableEditorRefs.current[currentFile.model].generateCorrectedHtml();
         if (correctedHtml) {
           finalTables[currentTableIndex] = correctedHtml;
         }
       }
 
       // Send the current text and all tables to be saved
-      const result = await updateParsedText(currentFileId, {
+      const result = await updateDualParsedText(currentFileId, {
         outside_text: outsideText,
         tables: finalTables
       });
@@ -552,8 +528,97 @@ function App() {
 
   // Add handleUndo function
   const handleUndo = () => {
-    if (tableEditor.current?.canUndo()) {
-      tableEditor.current.undo();
+    if (tableEditorRefs.current[currentFile.model] && tableEditorRefs.current[currentFile.model].canUndo()) {
+      tableEditorRefs.current[currentFile.model].undo();
+    }
+  };
+
+  // Text/table change handlers for dual annotation
+  const handleDualTextChange = (model, newText) => {
+    setDualOutsideText(prev => ({ ...prev, [model]: newText }));
+  };
+  const handleDualTableChange = (model, newTableHtml) => {
+    setDualTables(prev => {
+      const newTables = [...prev[model]];
+      newTables[dualTableIndices[model]] = newTableHtml;
+      return { ...prev, [model]: newTables };
+    });
+  };
+  const handleDualTableNavigation = (model, direction) => {
+    setDualTableIndices(prev => {
+      const maxIdx = (dualTables[model] || []).length - 1;
+      let idx = prev[model];
+      if (direction === 'next' && idx < maxIdx) idx++;
+      else if (direction === 'prev' && idx > 0) idx--;
+      return { ...prev, [model]: idx };
+    });
+  };
+
+  // Save both annotation files
+  const saveDualCurrentText = async () => {
+    if (!currentFileId) return false;
+    try {
+      // For each model, get the latest HTML from TableEditor ref and update dualTables
+      let updatedTables = { ...dualTables };
+      for (const model of MODEL_NAMES) {
+        let tablesCopy = [...dualTables[model]];
+        const ref = tableEditorRefs.current[model];
+        if (ref && ref.generateCorrectedHtml) {
+          const html = ref.generateCorrectedHtml();
+          tablesCopy[dualTableIndices[model]] = html;
+        }
+        updatedTables[model] = tablesCopy;
+      }
+      setDualTables(updatedTables); // update state for consistency
+      const payload = {};
+      for (const model of MODEL_NAMES) {
+        payload[model] = {
+          outside_text: dualOutsideText[model],
+          tables: updatedTables[model]
+        };
+      }
+      const result = await updateDualParsedText(currentFileId, payload);
+      if (!result.success) {
+        toast.error('Error saving dual annotation files');
+        return false;
+      }
+      return true;
+    } catch (error) {
+      toast.error('Error saving dual annotation files');
+      return false;
+    }
+  };
+
+  // Update handleSaveSingleModel to always get the latest HTML from the TableEditor ref before saving
+  const handleSaveSingleModel = async (model) => {
+    if (!currentFileId) return;
+    setIsLoading(true);
+    setLoadingStatus(`Saving ${model} annotation...`);
+    try {
+      // Get latest HTML from TableEditor for this model
+      let latestTables = [...dualTables[model]];
+      const ref = tableEditorRefs.current[model];
+      if (ref && ref.generateCorrectedHtml) {
+        const html = ref.generateCorrectedHtml();
+        latestTables[dualTableIndices[model]] = html;
+      }
+      const payload = {};
+      payload[model] = {
+        outside_text: dualOutsideText[model],
+        tables: latestTables
+      };
+      const result = await updateDualParsedText(currentFileId, payload);
+      if (!result.success) {
+        toast.error(`Error saving ${model} annotation file`);
+      } else {
+        toast.success(`${model} annotation saved successfully`);
+      }
+      // Update state with latest tables
+      setDualTables(prev => ({ ...prev, [model]: latestTables }));
+    } catch (error) {
+      toast.error(`Error saving ${model} annotation file`);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -596,7 +661,7 @@ function App() {
                       variant="outlined"
                       startIcon={<UndoIcon />}
                       onClick={handleUndo}
-                      disabled={!tableEditor.current?.canUndo()}
+                      disabled={!tableEditorRefs.current[currentFile.model]?.canUndo()}
                     >
                       Undo
                     </Button>
@@ -616,14 +681,6 @@ function App() {
                     >
                       Next
                     </Button>
-                    <Button
-                      variant="contained"
-                      color="primary"
-                      onClick={handleManualSave}
-                      disabled={isLoading}
-                    >
-                      Save File
-                    </Button>
                           <Button
                             variant="outlined"
                             color="error"
@@ -638,8 +695,8 @@ function App() {
 
               {/* Main Content */}
               <Grid container spacing={2} sx={{ height: 'calc(100% - 80px)' }}>
-                {/* Left side - Image */}
-                <Grid item xs={12} md={6}>
+                {/* Left side - Image (smaller) */}
+                <Grid item xs={12} md={4}>
                   <Paper sx={{ height: '100%', overflow: 'hidden' }}>
                     {currentImage && (
                       <ZoomableImage src={currentImage} alt="Current image" />
@@ -647,52 +704,71 @@ function App() {
                   </Paper>
                 </Grid>
 
-                {/* Right side - Text and Table editors */}
-                <Grid item xs={12} md={6}>
-                      <Box sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: 2 
-                  }}>
-                    {/* Text Editor */}
-                    <Paper sx={{ flex: 0.67, overflow: 'hidden' }}>
-                      <TextEditor 
-                        text={outsideText}
-                        onTextChange={handleTextChange}
-                      />
-                    </Paper>
-
-                    {/* Table Editor */}
-                    <Paper sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                      {tables.length > 0 ? (
-                        <>
-                          <TableNavigator
-                            currentTable={currentTableIndex}
-                            totalTables={tables.length}
-                            onNavigate={handleTableNavigation}
-                          />
-                          <Box sx={{ flex: 1, overflow: 'auto' }}>
+                {/* Right side - Dual Text and Table editors */}
+                <Grid item xs={12} md={8}>
+                  <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {/* Dual Text Editors */}
+                    <Grid container spacing={2} sx={{ flex: 0.67, height: '40%' }}>
+                      {MODEL_NAMES.map((model, idx) => (
+                        <Grid item xs={6} key={model}>
+                          <Paper sx={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 1 }}>
+                              <Typography variant="subtitle2">{model}</Typography>
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                size="small"
+                                onClick={() => handleSaveSingleModel(model)}
+                                disabled={isLoading}
+                              >
+                                Save File
+                              </Button>
+                            </Box>
+                            <TextEditor 
+                              text={dualOutsideText[model]}
+                              onTextChange={text => handleDualTextChange(model, text)}
+                              model={model}
+                              modelIndex={idx}
+                              diffInfo={diffInfo}
+                            />
+                          </Paper>
+                        </Grid>
+                      ))}
+                    </Grid>
+                    {/* Dual Table Editors */}
+                    <Grid container spacing={2} sx={{ flex: 1, height: '60%' }}>
+                      {MODEL_NAMES.map((model, idx) => (
+                        <Grid item xs={6} key={model}>
+                          <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                            <Typography variant="subtitle2" sx={{ p: 1 }}>{model}</Typography>
+                            {(dualTables[model] && dualTables[model].length > 0) ? (
+                              <>
+                                <TableNavigator
+                                  currentTable={dualTableIndices[model]}
+                                  totalTables={dualTables[model].length}
+                                  onNavigate={dir => handleDualTableNavigation(model, dir)}
+                                />
+                                <Box sx={{ flex: 1, overflow: 'auto' }}>
                         <TableEditor
-                          ref={tableEditor}
-                              tableHtml={tables[currentTableIndex]}
-                          onAnnotationSaved={handleAnnotationSaved}
-                          existingAnnotations={currentAnnotations}
-                              onExportHtml={handleTableChange}
-                          autoSave={autoSave}
-                          onEditingStateChange={setIsEditing}
-                              hideInstructions={true}
+                                    ref={el => tableEditorRefs.current[model] = el}
+                                    tableHtml={dualTables[model][dualTableIndices[model]]}
+                                    onExportHtml={html => handleDualTableChange(model, html)}
+                                    model={model}
+                                    modelIndex={idx}
+                                    diffInfo={diffInfo}
+                                    // ...other props as needed...
                         />
                       </Box>
-                        </>
+                              </>
                   ) : (
-                        <Box sx={{ p: 2, textAlign: 'center' }}>
-                          <Typography color="textSecondary">
-                            No tables found in the text
-                    </Typography>
+                              <Box sx={{ p: 2, textAlign: 'center' }}>
+                                <Typography color="textSecondary">No tables found in the text</Typography>
                 </Box>
               )}
             </Paper>
+                        </Grid>
+                      ))}
+                    </Grid>
                   </Box>
                 </Grid>
               </Grid>

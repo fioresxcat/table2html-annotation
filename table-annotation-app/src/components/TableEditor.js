@@ -8,7 +8,10 @@ const TableEditor = React.forwardRef(({
   onExportHtml, 
   autoSave = true, 
   onEditingStateChange = () => {},
-  hideInstructions = false
+  hideInstructions = false,
+  model,
+  modelIndex,
+  diffInfo
 }, ref) => {
   const [tableData, setTableData] = useState({ rows: [], headers: [] });
   const [editingCell, setEditingCell] = useState(null);
@@ -20,6 +23,11 @@ const TableEditor = React.forwardRef(({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [history, setHistory] = useState([]);
   const [currentHistoryIndex, setCurrentHistoryIndex] = useState(-1);
+
+  const HIGHLIGHT_COLORS = [
+    '#ffcccc', // model 0: red
+    '#ccffcc'  // model 1: green
+  ];
 
   // Helper function to sanitize table HTML
   const sanitizeTableHtml = (tableHtml) => {
@@ -397,8 +405,8 @@ const TableEditor = React.forwardRef(({
       setSelectedCells([]);
       const cell = tableData.rows[rowIndex][colIndex];
       setEditingCell({ rowIndex, colIndex });
-      setEditValue(cell.text);
-      setDialogOpen(true);
+    setEditValue(cell.text);
+    setDialogOpen(true);
     }
   };
 
@@ -456,7 +464,7 @@ const TableEditor = React.forwardRef(({
     newTable.setAttribute('border', '1');
     const tbody = document.createElement('tbody');
     newTable.appendChild(tbody);
-
+    
     // First, calculate the total number of columns in the table
     let totalColumns = 0;
     tableData.rows.forEach(row => {
@@ -606,6 +614,12 @@ const TableEditor = React.forwardRef(({
     handleSaveChanges();
   };
 
+  // Helper to check if a cell should be highlighted
+  function getCellDiff(rowIdx, colIdx) {
+    if (!diffInfo || !diffInfo.table_diff) return null;
+    return diffInfo.table_diff.find(diff => diff.row === rowIdx && diff.col === colIdx && diff.diff_type && diff.diff_type.length > 0);
+  }
+
   // Render the table editor
   return (
     <Box sx={{ height: '100%', overflow: 'hidden' }}>
@@ -633,38 +647,39 @@ const TableEditor = React.forwardRef(({
         }}
       >
         <Table>
-          <TableBody>
-            {tableData.rows.map((row, rowIndex) => (
-              <TableRow key={rowIndex}>
+              <TableBody>
+                {tableData.rows.map((row, rowIndex) => (
+                  <TableRow key={rowIndex}>
                 {row.map((cell, colIndex) => (
                   cell && (
-                    <TableCell
+                        <TableCell 
                       key={`${rowIndex}-${colIndex}`}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onContextMenu={(e) => handleContextMenu(e, rowIndex, colIndex)}
-                      rowSpan={cell.rowspan}
-                      colSpan={cell.colspan}
+                          rowSpan={cell.rowspan}
+                          colSpan={cell.colspan}
                       component={cell.isHeader ? 'th' : 'td'}
                       align="left"
-                      sx={{
-                        cursor: 'pointer',
+                          sx={{
+                            cursor: 'pointer',
                         backgroundColor: selectedCells.some(
                           c => c.rowIndex === rowIndex && c.colIndex === colIndex
-                        ) ? '#e3f2fd' : cell.isHeader ? '#f5f5f5' : 'inherit',
-                        '&:hover': {
+                        ) ? '#e3f2fd' : cell.isHeader ? '#f5f5f5' :
+                          (getCellDiff(rowIndex, colIndex) ? HIGHLIGHT_COLORS[modelIndex] : 'inherit'),
+                            '&:hover': {
                           backgroundColor: '#f0f7ff',
-                        },
-                      }}
-                    >
+                            },
+                          }}
+                        >
                       {cell.text}
-                    </TableCell>
+                        </TableCell>
                   )
                 ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
 
       {/* Context Menu */}
       <Menu
@@ -738,7 +753,7 @@ const TableEditor = React.forwardRef(({
       </Menu>
 
       <Dialog
-        open={dialogOpen}
+        open={dialogOpen} 
         onClose={handleCloseDialog}
         maxWidth="md"
       >

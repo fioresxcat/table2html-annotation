@@ -10,6 +10,9 @@ from flask_cors import CORS
 import mimetypes
 import time
 import pdb
+import sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from hightlight_diff import compare_ocr_results
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
@@ -17,6 +20,7 @@ CORS(app)  # Enable CORS for all routes
 IMAGES_DIR = os.environ.get('IMAGES_DIR', '/path/to/your/images')  # Set this to your images directory
 EXCLUDED_DIR = os.environ.get('EXCLUDED_DIR', os.path.join(IMAGES_DIR, 'excluded'))  # Default to a subdirectory of images
 PORT = int(os.environ.get('PORT', 5000))
+MODEL_NAMES = ["gemini_2.0_flash", "gemini_2.5_flash"]
 
 # File index cache
 file_index = None
@@ -169,8 +173,13 @@ def build_file_index():
             
         # Get base name without extension
         base_name = os.path.splitext(filename)[0]
-        txt_file = f"{base_name}.txt"
-        annotation_file = f"{base_name}_annotations.json"
+        # For each model, check for annotation txt
+        txt_paths = {}
+        has_txt = {}
+        for model in MODEL_NAMES:
+            txt_file = f"{base_name}-{model}.txt"
+            txt_paths[model] = os.path.join(IMAGES_DIR, txt_file) if txt_file in all_files else None
+            has_txt[model] = txt_file in all_files
         
         # Use cached stats
         stats = get_cached_file_stats(file_path)
@@ -181,10 +190,8 @@ def build_file_index():
             "id": base_name,
             "name": filename,
             "path": file_path,
-            "txtPath": os.path.join(IMAGES_DIR, txt_file) if txt_file in all_files else None,
-            "hasTxt": txt_file in all_files,
-            "annotationPath": os.path.join(IMAGES_DIR, annotation_file) if annotation_file in all_files else None,
-            "hasAnnotation": annotation_file in all_files,
+            "txtPaths": txt_paths,
+            "hasTxts": has_txt,
             "size": stats.st_size,
             "lastModified": stats.st_mtime
         })
@@ -222,8 +229,8 @@ def list_files():
         files_data = [{
             "id": file["id"],
             "name": file["name"],
-            "hasTxt": file["hasTxt"],
-            "hasAnnotation": file["hasAnnotation"],
+            "hasTxt": file["hasTxts"][MODEL_NAMES[0]] if MODEL_NAMES[0] in file["hasTxts"] else False,
+            "hasAnnotation": file["hasTxts"][MODEL_NAMES[1]] if MODEL_NAMES[1] in file["hasTxts"] else False,
             "lastModified": file["lastModified"]
         } for file in paginated_files]
         
@@ -330,11 +337,11 @@ def get_txt(file_id):
         
         # Find file in index
         file_info = next((file for file in index if file["id"] == file_id), None)
-        if not file_info or not file_info["hasTxt"]:
-            return jsonify({"error": "Text file not found"}), 404
+        if not file_info or not file_info["hasTxts"][MODEL_NAMES[0]]:
+            return jsonify({"error": f"Text file for {MODEL_NAMES[0]} not found"}), 404
         
         # Read text file
-        with open(file_info["txtPath"], 'r', encoding='utf-8') as txt_file:
+        with open(file_info["txtPaths"][MODEL_NAMES[0]], 'r', encoding='utf-8') as txt_file:
             txt_content = txt_file.read()
         
         return jsonify({
@@ -357,7 +364,7 @@ def get_annotations(file_id):
             return jsonify({"error": "File not found"}), 404
         
         # If no annotations exist yet, return empty
-        if not file_info["hasAnnotation"]:
+        if not file_info["hasTxts"][MODEL_NAMES[0]] and not file_info["hasTxts"][MODEL_NAMES[1]]:
             return jsonify({
                 "success": True,
                 "annotations": {
@@ -368,7 +375,7 @@ def get_annotations(file_id):
             })
         
         # Read annotation file
-        with open(file_info["annotationPath"], 'r', encoding='utf-8') as annotation_file:
+        with open(file_info["txtPaths"][MODEL_NAMES[0]], 'r', encoding='utf-8') as annotation_file:
             annotations = json.load(annotation_file)
         
         return jsonify({
@@ -394,15 +401,15 @@ def save_annotations(file_id):
         annotation_data = request.json
         
         # Set the annotation path
-        annotation_path = file_info["annotationPath"] or os.path.join(IMAGES_DIR, f"{file_id}_annotations.json")
-        
-        # Save annotation to file
+        for model in MODEL_NAMES:
+            annotation_path = file_info["txtPaths"].get(model) or os.path.join(IMAGES_DIR, f"{file_id}-{model}.txt")
         with open(annotation_path, 'w', encoding='utf-8') as annotation_file:
             json.dump(annotation_data, annotation_file, indent=2)
         
         # Update file index to show this file now has annotations
-        file_info["hasAnnotation"] = True
-        file_info["annotationPath"] = annotation_path
+        for model in MODEL_NAMES:
+            file_info["hasTxts"][model] = True
+            file_info["txtPaths"][model] = annotation_path
         
         return jsonify({
             "success": True,
@@ -451,7 +458,7 @@ def export_all_annotations():
         index = build_file_index()
         
         # Filter files that have annotations
-        annotated_files = [file for file in index if file["hasAnnotation"]]
+        annotated_files = [file for file in index if any(file["hasTxts"][model] for model in MODEL_NAMES)]
         
         if not annotated_files:
             return jsonify({"error": "No annotated files found"}), 404
@@ -459,12 +466,21 @@ def export_all_annotations():
         # Collect all annotations
         annotations = []
         for file in annotated_files:
-            try:
-                with open(file["annotationPath"], 'r', encoding='utf-8') as annotation_file:
-                    annotation_data = json.load(annotation_file)
-                    annotations.append(annotation_data)
-            except Exception as e:
-                print(f"Error reading annotation file {file['annotationPath']}: {str(e)}")
+            result = {}
+            for model in MODEL_NAMES:
+                if file["hasTxts"][model]:
+                    try:
+                        with open(file["txtPaths"][model], 'r', encoding='utf-8') as annotation_file:
+                            annotation_data = json.load(annotation_file)
+                            result[model] = annotation_data
+                    except Exception as e:
+                        print(f"Error reading annotation file {file['txtPaths'][model]}: {str(e)}")
+            annotations.append({
+                "id": file["id"],
+                "name": file["name"],
+                "path": file["path"],
+                "annotations": result
+            })
         
         # Create export data
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -519,24 +535,27 @@ def update_txt(file_id):
             return jsonify({"error": "No text content provided"}), 400
         
         # Check if text file exists
-        txt_path = file_info.get("txtPath")
-        if not txt_path:
-            # Create a new text file if it doesn't exist
-            base_name = file_id
-            txt_path = os.path.join(IMAGES_DIR, f"{base_name}.txt")
+        for model in MODEL_NAMES:
+            txt_path = file_info["txtPaths"].get(model)
+            if not txt_path:
+                # Create a new text file if it doesn't exist
+                base_name = file_id
+                txt_path = os.path.join(IMAGES_DIR, f"{base_name}-{model}.txt")
         
         # Save text to the file
-        with open(txt_path, 'w', encoding='utf-8') as txt_file:
-            txt_file.write(txt_content)
+        for model in MODEL_NAMES:
+            with open(file_info["txtPaths"][model], 'w', encoding='utf-8') as txt_file:
+                txt_file.write(txt_content)
         
         # Update the file index
-        file_info["hasTxt"] = True
-        file_info["txtPath"] = txt_path
+        for model in MODEL_NAMES:
+            file_info["hasTxts"][model] = True
+            file_info["txtPaths"][model] = file_info["txtPaths"][model]
         
         return jsonify({
             "success": True,
             "message": "Text file updated successfully",
-            "path": txt_path
+            "path": file_info["txtPaths"][MODEL_NAMES[0]]
         })
     except Exception as e:
         print(f"Error updating text file: {str(e)}")
@@ -560,12 +579,8 @@ def exclude_file(file_id):
         image_filename = os.path.basename(image_path)
         
         # Get text path if it exists
-        txt_path = file_info.get("txtPath")
-        txt_filename = os.path.basename(txt_path) if txt_path else None
-        
-        # Get annotation path if it exists
-        annotation_path = file_info.get("annotationPath")
-        annotation_filename = os.path.basename(annotation_path) if annotation_path else None
+        txt_paths = {model: file_info["txtPaths"].get(model) for model in MODEL_NAMES if file_info["hasTxts"][model]}
+        txt_filenames = [os.path.basename(txt_path) for txt_path in txt_paths.values() if txt_path]
         
         # Move image file
         excluded_image_path = os.path.join(EXCLUDED_DIR, image_filename)
@@ -573,17 +588,13 @@ def exclude_file(file_id):
         
         moved_files = [image_filename]
         
-        # Move text file if it exists
-        if txt_path and os.path.exists(txt_path):
-            excluded_txt_path = os.path.join(EXCLUDED_DIR, txt_filename)
-            shutil.move(txt_path, excluded_txt_path)
-            moved_files.append(txt_filename)
-        
-        # Move annotation file if it exists
-        if annotation_path and os.path.exists(annotation_path):
-            excluded_annotation_path = os.path.join(EXCLUDED_DIR, annotation_filename)
-            shutil.move(annotation_path, excluded_annotation_path)
-            moved_files.append(annotation_filename)
+        # Move text files if they exist
+        for model in MODEL_NAMES:
+            txt_path = file_info["txtPaths"].get(model)
+            if txt_path and os.path.exists(txt_path):
+                excluded_txt_path = os.path.join(EXCLUDED_DIR, os.path.basename(txt_path))
+                shutil.move(txt_path, excluded_txt_path)
+                moved_files.append(os.path.basename(txt_path))
         
         # Force rebuild of the file index
         global file_index, index_last_updated
@@ -604,28 +615,27 @@ def exclude_file(file_id):
 def get_parsed_txt(file_id):
     """Get parsed text content"""
     try:
-        # Get latest file info
         index = build_file_index()
-        
-        # Find file in index
         file_info = next((file for file in index if file["id"] == file_id), None)
         if not file_info:
             return jsonify({"error": "File not found"}), 404
-        
-        # Check if text file exists
-        txt_path = file_info.get("txtPath")
-        if not txt_path or not os.path.exists(txt_path):
-            return jsonify({"error": "Text file not found"}), 404
-        
-        # Read and parse the current content
-        parsed = get_parsed_content(txt_path)
-        if not parsed:
-            return jsonify({"error": "Error parsing text file"}), 500
-        
+        result = {}
+        for model in MODEL_NAMES:
+            txt_path = file_info["txtPaths"].get(model)
+            if txt_path and os.path.exists(txt_path):
+                parsed = get_parsed_content(txt_path)
+                if parsed:
+                    result[model] = {
+                        "outside_text": parsed["outside_text"],
+                        "tables": parsed["tables"]
+                    }
+                else:
+                    result[model] = None
+            else:
+                result[model] = None
         return jsonify({
             "success": True,
-            "outside_text": parsed["outside_text"],
-            "tables": parsed["tables"]
+            "annotations": result
         })
     except Exception as e:
         print(f"Error getting parsed text: {str(e)}")
@@ -634,58 +644,37 @@ def get_parsed_txt(file_id):
 @app.route('/api/files/<file_id>/update-parsed-txt', methods=['POST'])
 def update_parsed_txt(file_id):
     """Update text file from parsed content"""
-    print('post heererere')
     try:
-        # Get latest file info
         index = build_file_index()
-        
-        # Find file in index
         file_info = next((file for file in index if file["id"] == file_id), None)
         if not file_info:
             return jsonify({"error": "File not found"}), 404
-        
-        # Get content from request
         data = request.json
-        outside_text = data.get("outside_text")
-        tables = data.get("tables", [])
-        
-        if outside_text is None:
-            return jsonify({"error": "No outside text provided"}), 400
-        
-        # Check if text file exists or create new one
-        txt_path = file_info.get("txtPath")
-        if not txt_path:
-            base_name = file_id
-            txt_path = os.path.join(IMAGES_DIR, f"{base_name}.txt")
-        
-        # Count the number of table markers in the text
-        marker_count = outside_text.count('<TABLE></TABLE>')
-        
-        # Verify we have the right number of tables
-        if marker_count != len(tables):
-            return jsonify({
-                "success": False,
-                "error": f"Mismatch between number of table markers ({marker_count}) and tables provided ({len(tables)})"
-            }), 400
-        
-        # Reconstruct the full text by inserting tables back in their positions
-        full_text = outside_text
-        for table in tables:
-            # Replace only the first occurrence of the marker
-            # This ensures tables are inserted in the correct order
-            full_text = full_text.replace('<TABLE></TABLE>', table, 1)
-        
-        # Save text to the file
-        with open(txt_path, 'w', encoding='utf-8') as txt_file:
-            txt_file.write(full_text)
-        
-        # Force index refresh to update metadata
+        # Expecting: { gemini_2.0_flash: {outside_text, tables}, gemini_2.5_flash: {outside_text, tables} }
+        for model in MODEL_NAMES:
+            model_data = data.get(model)
+            if not model_data:
+                continue
+            outside_text = model_data.get("outside_text")
+            tables = model_data.get("tables", [])
+            if outside_text is None:
+                continue
+            txt_path = file_info["txtPaths"].get(model)
+            if not txt_path:
+                base_name = file_id
+                txt_path = os.path.join(IMAGES_DIR, f"{base_name}-{model}.txt")
+            marker_count = outside_text.count('<TABLE></TABLE>')
+            if marker_count != len(tables):
+                continue  # skip invalid
+            full_text = outside_text
+            for table in tables:
+                full_text = full_text.replace('<TABLE></TABLE>', table, 1)
+            with open(txt_path, 'w', encoding='utf-8') as txt_file:
+                txt_file.write(full_text)
         force_index_refresh()
-        
         return jsonify({
             "success": True,
-            "message": "Text file updated successfully",
-            "path": txt_path
+            "message": "Annotation text files updated successfully"
         })
     except Exception as e:
         print(f"Error updating text file: {str(e)}")
@@ -710,6 +699,38 @@ def force_index_refresh():
     global file_index, index_last_updated
     file_index = None
     index_last_updated = 0
+
+@app.route('/api/files/<file_id>/diff', methods=['GET'])
+def get_file_diff(file_id):
+    """Get both annotation contents and their diff result"""
+    try:
+        index = build_file_index()
+        file_info = next((file for file in index if file["id"] == file_id), None)
+        if not file_info:
+            return jsonify({"error": "File not found"}), 404
+        model_names = MODEL_NAMES
+        txt_paths = [file_info["txtPaths"].get(model) for model in model_names]
+        if not all(txt_paths) or not all(os.path.exists(p) for p in txt_paths):
+            return jsonify({"error": "One or both annotation files not found"}), 404
+        # Read and parse both files
+        parsed = []
+        for path in txt_paths:
+            parsed.append(get_parsed_content(path))
+        # Compute diff
+        diff_result = compare_ocr_results(txt_paths[1], txt_paths[0])
+        # Return both contents and diff
+        return jsonify({
+            "success": True,
+            "models": model_names,
+            "annotations": {
+                model_names[0]: parsed[0],
+                model_names[1]: parsed[1]
+            },
+            "diff": diff_result
+        })
+    except Exception as e:
+        print(f"Error getting file diff: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     # Initialize mimetypes

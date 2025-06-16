@@ -1,0 +1,1102 @@
+{
+    "plain_text_diff": [
+      {
+        "type": "partial_match",
+        "second_model_index": 1,
+        "first_model_index": 1,
+        "second_model_line": "GIÁY NỘP TIỀN / Deposit Slip",
+        "first_model_best_match": "GIẤY NỘP TIỀN / Deposit Slip",
+        "char_diffs_second_model": [
+          [
+            2,
+            3
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            2,
+            3
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 2,
+        "first_model_index": 2,
+        "second_model_line": "Ngày / Date 02-07-2024",
+        "first_model_best_match": "Ngày/ Date 15-03-2024",
+        "char_diffs_second_model": [
+          [
+            4,
+            5
+          ],
+          [
+            12,
+            14
+          ],
+          [
+            16,
+            17
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            4,
+            4
+          ],
+          [
+            11,
+            13
+          ],
+          [
+            15,
+            16
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 3,
+        "first_model_index": 3,
+        "second_model_line": "Mä GDV",
+        "first_model_best_match": "Ma GDV",
+        "char_diffs_second_model": [
+          [
+            1,
+            2
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            1,
+            2
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 7,
+        "second_model_line": "62"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 8,
+        "first_model_index": 10,
+        "second_model_line": "Người nộp tiền: DOAN THI GIANG",
+        "first_model_best_match": "Người nộp tiền: PHAM THANH TRUNG",
+        "char_diffs_second_model": [
+          [
+            16,
+            18
+          ],
+          [
+            19,
+            20
+          ],
+          [
+            23,
+            27
+          ],
+          [
+            29,
+            29
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            16,
+            18
+          ],
+          [
+            19,
+            20
+          ],
+          [
+            23,
+            23
+          ],
+          [
+            25,
+            31
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 9,
+        "first_model_index": 16,
+        "second_model_line": "CMND/Hộ chiếu: 036183017097",
+        "first_model_best_match": "CMND/Hộ chiếu: 024065011384",
+        "char_diffs_second_model": [
+          [
+            16,
+            17
+          ],
+          [
+            18,
+            21
+          ],
+          [
+            23,
+            27
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            16,
+            19
+          ],
+          [
+            20,
+            21
+          ],
+          [
+            23,
+            27
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 10,
+        "first_model_index": 19,
+        "second_model_line": "IDIPP",
+        "first_model_best_match": "ID/PP",
+        "char_diffs_second_model": [
+          [
+            2,
+            3
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            2,
+            3
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 13,
+        "second_model_line": "Địa Chỉ: SO 228, DUONG VANII DAI TRONG, P BINII TRI DONG B"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 14,
+        "first_model_index": 50,
+        "second_model_line": "Address QUAN BINH TAN, THANH PHO HO CHI MINH",
+        "first_model_best_match": "Tỉnh/TP: THANH PHO HO CHI MINH",
+        "char_diffs_second_model": [
+          [
+            0,
+            18
+          ],
+          [
+            19,
+            22
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            0,
+            0
+          ],
+          [
+            1,
+            8
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 17,
+        "first_model_index": 24,
+        "second_model_line": "Điện thoại: (0908) 036352",
+        "first_model_best_match": "Điện thoại: 28(0903) 373084",
+        "char_diffs_second_model": [
+          [
+            12,
+            12
+          ],
+          [
+            16,
+            17
+          ],
+          [
+            19,
+            19
+          ],
+          [
+            20,
+            25
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            12,
+            14
+          ],
+          [
+            18,
+            19
+          ],
+          [
+            21,
+            24
+          ],
+          [
+            25,
+            27
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 19,
+        "first_model_index": 14,
+        "second_model_line": "BẢNG KÊ THU TIẾN",
+        "first_model_best_match": "BẢNG KÊ THU TIÊN",
+        "char_diffs_second_model": [
+          [
+            14,
+            15
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            14,
+            15
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 22,
+        "first_model_index": 13,
+        "second_model_line": "Pay free",
+        "first_model_best_match": "Pay fee",
+        "char_diffs_second_model": [
+          [
+            5,
+            6
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            5,
+            5
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 25,
+        "first_model_index": 27,
+        "second_model_line": "Người thu luưởng:",
+        "first_model_best_match": "Người thụ hưởng:",
+        "char_diffs_second_model": [
+          [
+            8,
+            9
+          ],
+          [
+            10,
+            12
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            8,
+            9
+          ],
+          [
+            10,
+            11
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 26,
+        "second_model_line": "ĐOÀN THỊ GIÁNG"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 27,
+        "first_model_index": 28,
+        "second_model_line": "Deneficiary",
+        "first_model_best_match": "Beneficiary",
+        "char_diffs_second_model": [
+          [
+            0,
+            1
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 29,
+        "first_model_index": 31,
+        "second_model_line": "Pay fec",
+        "first_model_best_match": "Pay fee",
+        "char_diffs_second_model": [
+          [
+            6,
+            7
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            6,
+            7
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 30,
+        "second_model_line": "CMND/ Hộ chiếu: 036183017097 Ngày cấp:"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 31,
+        "first_model_index": 33,
+        "second_model_line": "ID/ PP",
+        "first_model_best_match": "ID/PP",
+        "char_diffs_second_model": [
+          [
+            3,
+            4
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            3,
+            3
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 32,
+        "first_model_index": 35,
+        "second_model_line": "Taie of issue",
+        "first_model_best_match": "Date of issue",
+        "char_diffs_second_model": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            0,
+            1
+          ],
+          [
+            2,
+            3
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 33,
+        "second_model_line": "Số tài khoản / Account No: 3567 953528 Mã nhận diện thê/ContractID: 375460120"
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 37,
+        "second_model_line": "ACB-TRUNG TAM TIE"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 39,
+        "first_model_index": 44,
+        "second_model_line": "số tiền bằng số:",
+        "first_model_best_match": "Số tiền bằng số:",
+        "char_diffs_second_model": [
+          [
+            0,
+            1
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 40,
+        "first_model_index": 43,
+        "second_model_line": "2,301,000 VND",
+        "first_model_best_match": "28,000,000 VND",
+        "char_diffs_second_model": [
+          [
+            1,
+            1
+          ],
+          [
+            2,
+            3
+          ],
+          [
+            4,
+            5
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            1,
+            2
+          ],
+          [
+            3,
+            3
+          ],
+          [
+            4,
+            6
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 42,
+        "second_model_line": "Tình TP: THΑΝΗ ΡΠΟ HO CHI MINH"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 43,
+        "first_model_index": 51,
+        "second_model_line": "Province/Cily",
+        "first_model_best_match": "Province/City",
+        "char_diffs_second_model": [
+          [
+            11,
+            12
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            11,
+            12
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 44,
+        "second_model_line": "Số tiền bằng chữ HAITRIEU BA TRAM LE MOT NGAN DONGANG TMCP Á CHÂU TỔNG CỘNG"
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 46,
+        "second_model_line": "Nội dung: NOP THEN THE TIN DUNG 3567 95** **** 3528"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 47,
+        "first_model_index": 49,
+        "second_model_line": "Tetaris",
+        "first_model_best_match": "Details",
+        "char_diffs_second_model": [
+          [
+            0,
+            1
+          ],
+          [
+            4,
+            5
+          ],
+          [
+            6,
+            6
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            0,
+            1
+          ],
+          [
+            4,
+            4
+          ],
+          [
+            5,
+            6
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 48,
+        "first_model_index": 61,
+        "second_model_line": "Người nộp tiến",
+        "first_model_best_match": "Người nộp tiền",
+        "char_diffs_second_model": [
+          [
+            12,
+            13
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            12,
+            13
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 50,
+        "second_model_line": "Comm"
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 51,
+        "second_model_line": "Doan Thị Giang"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 52,
+        "first_model_index": 73,
+        "second_model_line": "QF 23/TG",
+        "first_model_best_match": "QF-23/TG",
+        "char_diffs_second_model": [
+          [
+            2,
+            3
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            2,
+            3
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 55,
+        "second_model_line": "Lelle"
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 56,
+        "second_model_line": "THAILE AL MY"
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 57,
+        "first_model_index": 56,
+        "second_model_line": "ĐÃ THU ĐỦ",
+        "first_model_best_match": "ĐÃ THU ĐÙ",
+        "char_diffs_second_model": [
+          [
+            8,
+            9
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            8,
+            9
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 58,
+        "first_model_index": 57,
+        "second_model_line": "* RECEIVEKm",
+        "first_model_best_match": "* RECEIVE",
+        "char_diffs_second_model": [
+          [
+            9,
+            11
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            9,
+            9
+          ]
+        ]
+      },
+      {
+        "type": "partial_match",
+        "second_model_index": 62,
+        "first_model_index": 67,
+        "second_model_line": "Người thu tiến",
+        "first_model_best_match": "Người thu tiên",
+        "char_diffs_second_model": [
+          [
+            12,
+            13
+          ]
+        ],
+        "char_diffs_first_model": [
+          [
+            12,
+            13
+          ]
+        ]
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 64,
+        "second_model_line": "2,301,000"
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 65,
+        "second_model_line": "ΤΗΛΙ"
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 66,
+        "second_model_line": "AILE AI"
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 67,
+        "second_model_line": "MY"
+      },
+      {
+        "type": "second_model_unmatched",
+        "second_model_index": 68,
+        "second_model_line": "91"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 5,
+        "first_model_line": ":"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 7,
+        "first_model_line": ":"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 9,
+        "first_model_line": "(64)"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 17,
+        "first_model_line": "Ngày cấp: 11-08-2021"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 22,
+        "first_model_line": "Địa Chỉ: SO 1530/28, DUONG NGUYEN DUY TRINH, PHƯƠNG"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 23,
+        "first_model_line": "Address LONG TRUONG THANH PHO THU DỤC, THANH PHO"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 26,
+        "first_model_line": "HO CHI MIΙΝΗ"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 29,
+        "first_model_line": "PHAM THANH TRUNG"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 32,
+        "first_model_line": "CMND/Hộ chiếu:"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 38,
+        "first_model_line": "Số tài khoản / Account No:"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 39,
+        "first_model_line": "10082588"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 41,
+        "first_model_line": "ACB - CN BEN THANH"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 46,
+        "first_model_line": "Số tiền bằng chữ: HAI MUOI TAM TRIEU DONG CHAN"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 48,
+        "first_model_line": "Nội dung: NTM"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 54,
+        "first_model_line": "NGÂN HÀNG TMCP Á CHA"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 58,
+        "first_model_line": "TỔNG CỘNG"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 60,
+        "first_model_line": "28,000,000"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 62,
+        "first_model_line": "DevOntor"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 64,
+        "first_model_line": "ler"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 69,
+        "first_model_line": "Phạm Thanh"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 70,
+        "first_model_line": "Burg"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 71,
+        "first_model_line": "NGUYEN LUYEN TIEU MY"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 72,
+        "first_model_line": "NGUYEN LUYEN TIEU MY"
+      },
+      {
+        "type": "first_model_unmatched",
+        "first_model_index": 74,
+        "first_model_line": "79"
+      }
+    ],
+    "table_diff": [
+      {
+        "row": 0,
+        "col": 0,
+        "second_model_cell": {
+          "row": 0,
+          "col": 0,
+          "text": "Mệnh giá\nDenomination.",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 0,
+          "col": 0,
+          "text": "Mệnh giá\nDenomination",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 0,
+        "col": 1,
+        "second_model_cell": {
+          "row": 0,
+          "col": 1,
+          "text": "Se\nlượng\nCuantity",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 0,
+          "col": 1,
+          "text": "Số\nlượng\nQuantity",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 1,
+        "col": 0,
+        "second_model_cell": {
+          "row": 1,
+          "col": 0,
+          "text": "500,0001",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 1,
+          "col": 0,
+          "text": "500,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 1,
+        "col": 1,
+        "second_model_cell": {
+          "row": 1,
+          "col": 1,
+          "text": "41",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 1,
+          "col": 1,
+          "text": "56",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 1,
+        "col": 2,
+        "second_model_cell": {
+          "row": 1,
+          "col": 2,
+          "text": "2,000,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 1,
+          "col": 2,
+          "text": "28,000,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 2,
+        "col": 0,
+        "second_model_cell": {
+          "row": 2,
+          "col": 0,
+          "text": "200,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 2,
+          "col": 0,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 2,
+        "col": 1,
+        "second_model_cell": {
+          "row": 2,
+          "col": 1,
+          "text": "1",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 2,
+          "col": 1,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 2,
+        "col": 2,
+        "second_model_cell": {
+          "row": 2,
+          "col": 2,
+          "text": "200,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 2,
+          "col": 2,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 3,
+        "col": 0,
+        "second_model_cell": {
+          "row": 3,
+          "col": 0,
+          "text": "100,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 3,
+          "col": 0,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 3,
+        "col": 1,
+        "second_model_cell": {
+          "row": 3,
+          "col": 1,
+          "text": "1",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 3,
+          "col": 1,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 3,
+        "col": 2,
+        "second_model_cell": {
+          "row": 3,
+          "col": 2,
+          "text": "100,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 3,
+          "col": 2,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 4,
+        "col": 0,
+        "second_model_cell": {
+          "row": 4,
+          "col": 0,
+          "text": "1,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 4,
+          "col": 0,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 4,
+        "col": 1,
+        "second_model_cell": {
+          "row": 4,
+          "col": 1,
+          "text": "1",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 4,
+          "col": 1,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      },
+      {
+        "row": 4,
+        "col": 2,
+        "second_model_cell": {
+          "row": 4,
+          "col": 2,
+          "text": "1,000",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "first_model_cell": {
+          "row": 4,
+          "col": 2,
+          "text": "",
+          "rowspan": 1,
+          "colspan": 1
+        },
+        "diff_type": [
+          "text_diff"
+        ]
+      }
+    ]
+  }
