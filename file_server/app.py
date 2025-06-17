@@ -473,7 +473,7 @@ def export_all_annotations():
                     try:
                         with open(file["txtPaths"][model], 'r', encoding='utf-8') as annotation_file:
                             annotation_data = json.load(annotation_file)
-                            result[model] = annotation_data
+                        result[model] = annotation_data
                     except Exception as e:
                         print(f"Error reading annotation file {file['txtPaths'][model]}: {str(e)}")
             annotations.append({
@@ -650,32 +650,61 @@ def update_parsed_txt(file_id):
         file_info = next((file for file in index if file["id"] == file_id), None)
         if not file_info:
             return jsonify({"error": "File not found"}), 404
+        
         data = request.json
         # Expecting: { gemini_2.0_flash: {outside_text, tables}, gemini_2.5_flash: {outside_text, tables} }
+        
+        saved_models = []
+        final_content = None
+        final_model = None
+        
         for model in MODEL_NAMES:
             model_data = data.get(model)
             if not model_data:
                 continue
+                
             outside_text = model_data.get("outside_text")
             tables = model_data.get("tables", [])
             if outside_text is None:
                 continue
+                
             txt_path = file_info["txtPaths"].get(model)
             if not txt_path:
                 base_name = file_id
                 txt_path = os.path.join(IMAGES_DIR, f"{base_name}-{model}.txt")
+                
             marker_count = outside_text.count('<TABLE></TABLE>')
             if marker_count != len(tables):
                 continue  # skip invalid
+                
             full_text = outside_text
             for table in tables:
                 full_text = full_text.replace('<TABLE></TABLE>', table, 1)
+                
+            # Save to model-specific file
             with open(txt_path, 'w', encoding='utf-8') as txt_file:
                 txt_file.write(full_text)
+                
+            saved_models.append(model)
+            
+            # Store content for potential final file save
+            final_content = full_text
+            final_model = model
+        
+        # If exactly one model was saved, also save to final file
+        if len(saved_models) == 1 and final_content is not None:
+            base_name = file_id
+            final_path = os.path.join(IMAGES_DIR, f"{base_name}-final.txt")
+            with open(final_path, 'w', encoding='utf-8') as final_file:
+                final_file.write(final_content)
+            print(f"Saved final annotation file: {final_path} (from {final_model})")
+        
         force_index_refresh()
         return jsonify({
             "success": True,
-            "message": "Annotation text files updated successfully"
+            "message": "Annotation text files updated successfully",
+            "saved_models": saved_models,
+            "final_saved": len(saved_models) == 1
         })
     except Exception as e:
         print(f"Error updating text file: {str(e)}")

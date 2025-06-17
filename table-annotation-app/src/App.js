@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Container, AppBar, Toolbar, Typography, Box, Paper, Button, CircularProgress, Snackbar, Alert, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Grid, ToggleButtonGroup, ToggleButton, TextField } from '@mui/material';
 import TableEditor from './components/TableEditor';
-import TextEditor from './components/TextEditor';
+import RichTextEditor from './components/RichTextEditor';
 import TableNavigator from './components/TableNavigator';
 import FileBrowser from './components/FileBrowser';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -618,7 +618,10 @@ function App() {
       if (!result.success) {
         toast.error(`Error saving ${model} annotation file`);
       } else {
-        toast.success(`${model} annotation saved successfully`);
+        const message = result.final_saved 
+          ? `${model} annotation saved successfully (also saved to final file)`
+          : `${model} annotation saved successfully`;
+        toast.success(message);
         // Update savedDualOutsideText for BOTH models to reflect the latest in-memory state
         setSavedDualOutsideText({ ...dualOutsideText, [model]: dualOutsideText[model] });
         // Recompute diff using in-memory content for both models
@@ -676,45 +679,45 @@ function App() {
             <Box sx={{ flex: 1, p: 2, display: 'flex', flexDirection: 'column', gap: 2, overflow: 'hidden' }}>
               {/* Top Navigation Bar */}
               <Paper sx={{ p: 0.5, display: 'flex', alignItems: 'center', gap: 1, minHeight: 0 }}>
-                <Button
+            <Button
                   startIcon={<ArrowBackIcon fontSize="small" />}
-                  onClick={handleBackToFiles}
+              onClick={handleBackToFiles}
                   variant="outlined"
-                  size="small"
+              size="small"
                   sx={{ minWidth: 0, px: 1 }}
-                >
-                  Back
-                </Button>
+            >
+              Back
+            </Button>
                 
                 <Typography variant="subtitle1" sx={{ flex: 1, fontWeight: 500, fontSize: 16 }}>
-                  {currentFile.name} 
+                    {currentFile.name}
                   <Typography component="span" variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                     (File {currentFile.pagination?.fileIndex} of {currentFile.pagination?.totalFiles}, 
                     Page {currentFile.pagination?.currentPage})
                   </Typography>
-                </Typography>
-
-                <Button
+                  </Typography>
+                
+                    <Button
                   startIcon={<NavigateBeforeIcon fontSize="small" />}
-                  onClick={handlePrevFile}
-                  disabled={isLoading}
+                      onClick={handlePrevFile}
+                      disabled={isLoading}
                   variant="outlined"
-                  size="small"
+                      size="small"
                   sx={{ minWidth: 0, px: 1 }}
-                >
-                  Previous
-                </Button>
-
-                <Button
+                    >
+                      Previous
+                    </Button>
+                    
+                    <Button
                   endIcon={<NavigateNextIcon fontSize="small" />}
-                  onClick={handleNextFile}
-                  disabled={isLoading}
+                      onClick={handleNextFile}
+                      disabled={isLoading}
                   variant="outlined"
-                  size="small"
+                      size="small"
                   sx={{ minWidth: 0, px: 1 }}
-                >
-                  Next
-                </Button>
+                    >
+                      Next
+                    </Button>
 
                 <ToggleButtonGroup
                   value={editMode}
@@ -767,114 +770,56 @@ function App() {
                         flexDirection: 'column',
                         overflow: 'hidden'
                       }}>
-                        {/* Text Editing Mode */}
-                        <Box sx={{ 
-                          flex: '0 0 50%', // This forces exactly 50% height
+                        {/* Text Editing Mode - Full Height */}
+                        <Paper sx={{ 
+                          height: '100%',
+                          p: 1, 
+                          display: 'flex', 
+                          flexDirection: 'column',
                           overflow: 'hidden',
-                          mb: 0.5
+                          minHeight: 0
                         }}>
-                          <Paper sx={{ 
-                            height: '100%',
-                            p: 1, 
-                            display: 'flex', 
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                            minHeight: 0
-                          }}>
-                            <Grid container spacing={1} sx={{ flex: 1, overflow: 'hidden' }}>
-                              {MODEL_NAMES.map((model, idx) => (
-                                <Grid item xs={6} key={model} sx={{ height: '100%' }}>
+                          <Grid container spacing={1} sx={{ flex: 1, overflow: 'hidden' }}>
+                            {MODEL_NAMES.map((model, idx) => (
+                              <Grid item xs={6} key={model} sx={{ height: '100%' }}>
+                                <Box sx={{ 
+                                  height: '100%',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  overflow: 'hidden'
+                                }}>
                                   <Box sx={{ 
-                                    height: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    overflow: 'hidden'
+                                    display: 'flex', 
+                                    justifyContent: 'space-between', 
+                                    alignItems: 'center',
+                                    mb: 0.5
                                   }}>
-                                    <Box sx={{ 
-                                      display: 'flex', 
-                                      justifyContent: 'space-between', 
-                                      alignItems: 'center',
-                                      mb: 0.5
-                                    }}>
-                                      <Typography variant="caption" sx={{ fontWeight: 500 }}>{'Text Editor: ' + model}</Typography>
-                                      <Button
-                                        variant="contained"
-                                        color="primary"
-                                        size="small"
-                                        onClick={() => handleSaveSingleModel(model)}
-                                        disabled={isLoading}
-                                        sx={{ minWidth: 0, px: 1, fontSize: 12 }}
-                                      >
-                                        Save
-                                      </Button>
-                                    </Box>
-                                    <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                                      <TextField
-                                        multiline
-                                        fullWidth
-                                        value={dualOutsideText[model]}
-                                        onChange={(e) => handleDualTextChange(model, e.target.value)}
-                                        variant="outlined"
-                                        sx={{
-                                          height: '100%',
-                                          '& .MuiInputBase-root': {
-                                            height: '100%',
-                                            fontFamily: 'monospace',
-                                            fontSize: 13
-                                          },
-                                          '& .MuiInputBase-inputMultiline': {
-                                            height: '100% !important',
-                                            overflowY: 'auto !important'
-                                          }
-                                        }}
-                                      />
-                                    </Box>
+                                    <Typography variant="caption" sx={{ fontWeight: 500 }}>{model}</Typography>
+                                    <Button
+                                      variant="contained"
+                                      color="primary"
+                                      size="small"
+                                      onClick={() => handleSaveSingleModel(model)}
+                                      disabled={isLoading}
+                                      sx={{ minWidth: 0, px: 1, fontSize: 12 }}
+                                    >
+                                      Save
+                                    </Button>
                                   </Box>
-                                </Grid>
-                              ))}
-                            </Grid>
-                          </Paper>
-                        </Box>
-                        
-                        {/* Text View Mode with Highlighting */}
-                        <Box sx={{ 
-                          flex: '0 0 50%', // This forces exactly 50% height
-                          overflow: 'hidden'
-                        }}>
-                          <Paper sx={{ 
-                            height: '100%',
-                            p: 1, 
-                            display: 'flex', 
-                            flexDirection: 'column',
-                            overflow: 'hidden',
-                            minHeight: 0
-                          }}>
-                            <Grid container spacing={1} sx={{ flex: 1, overflow: 'hidden' }}>
-                              {MODEL_NAMES.map((model, idx) => (
-                                <Grid item xs={6} key={model} sx={{ height: '100%' }}>
-                                  <Box sx={{ 
-                                    height: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    overflow: 'hidden'
-                                  }}>
-                                    <Typography variant="caption" sx={{ mb: 0.5, fontWeight: 500 }}>{'Text View: ' + model}</Typography>
-                                    <Box sx={{ flex: 1, overflow: 'hidden' }}>
-                                      <TextEditor
-                                        text={savedDualOutsideText[model]}
-                                        onTextChange={() => {}} // read-only
-                                        model={model}
-                                        modelIndex={idx}
-                                        diffInfo={diffInfo}
-                                        readOnly={true}
-                                      />
-                                    </Box>
+                                  <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                                    <RichTextEditor
+                                      text={dualOutsideText[model]}
+                                      onTextChange={newText => handleDualTextChange(model, newText)}
+                                      model={model}
+                                      diffInfo={diffInfo}
+                                      modelIndex={idx}
+                                    />
                                   </Box>
-                                </Grid>
-                              ))}
-                            </Grid>
-                          </Paper>
-                        </Box>
+                                </Box>
+                              </Grid>
+                            ))}
+                          </Grid>
+                        </Paper>
                       </Box>
                     ) : (
                       <>
@@ -885,7 +830,7 @@ function App() {
                               <Grid item xs={6} key={model}>
                                 <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                                    <Typography variant="caption" sx={{ fontWeight: 500 }}>{'Table Editor: ' + model}</Typography>
+                                    <Typography variant="caption" sx={{ fontWeight: 500 }}>{model}</Typography>
                                     <Button
                                       variant="contained"
                                       color="primary"
@@ -914,27 +859,27 @@ function App() {
                                           diffInfo={diffInfo}
                                           onCellEditCommit={handleTableCellEditCommit}
                                         />
-                                      </Box>
+                    </Box>
                                     </>
-                                  ) : (
+                  ) : (
                                     <Box sx={{ p: 1, textAlign: 'center' }}>
                                       <Typography color="textSecondary" variant="caption">No tables found in the text</Typography>
                                     </Box>
-                                  )}
-                                </Box>
+                  )}
+                </Box>
                               </Grid>
                             ))}
                           </Grid>
                         </Paper>
                       </>
-                    )}
+              )}
                   </Box>
                 </Grid>
               </Grid>
-            </Box>
-          )}
-        </Box>
-        
+          </Box>
+        )}
+      </Box>
+      
         {/* Loading overlay */}
         {isLoading && (
           <Box

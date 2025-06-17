@@ -132,7 +132,7 @@ def compare_ocr_results(second_model_path, first_model_path, min_score_threshold
         "plain_text_diff": plain_diffs,
         "table_diff": table_diffs
     }
-
+    
 def compare_ocr_results_from_content(second_model_content, first_model_content, min_score_threshold=0.6):
     second_model_lines, second_model_table = split_text_and_table(second_model_content)
     first_model_lines, first_model_table = split_text_and_table(first_model_content)

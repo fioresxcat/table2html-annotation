@@ -638,8 +638,6 @@ const TableEditor = React.forwardRef(({
     <Box sx={{ height: '100%', overflow: 'hidden' }}>
       {!hideInstructions && (
         <Typography variant="body2" sx={{ p: 1, color: 'text.secondary' }}>
-          Click to edit cells. Use Ctrl/Cmd+Click to select multiple cells for merging.
-          Right-click for additional options.
         </Typography>
       )}
       
@@ -656,6 +654,11 @@ const TableEditor = React.forwardRef(({
             border: '1px solid #e0e0e0',
             padding: '8px',
             position: 'relative',
+            lineHeight: '1.5',
+            verticalAlign: 'top'
+          },
+          '& tr': {
+            minHeight: '28px'
           }
         }}
       >
@@ -675,16 +678,17 @@ const TableEditor = React.forwardRef(({
                       align="left"
                           sx={{
                             cursor: 'pointer',
+                            lineHeight: '1.5',
                         backgroundColor: selectedCells.some(
                           c => c.rowIndex === rowIndex && c.colIndex === colIndex
                         ) ? '#e3f2fd' : cell.isHeader ? '#f5f5f5' :
                           (getCellDiff(rowIndex, colIndex) ? HIGHLIGHT_COLORS[modelIndex] : 'inherit'),
                             '&:hover': {
                           backgroundColor: '#f0f7ff',
-                            },
+                            }
                           }}
                         >
-                      {cell.text}
+                      {cell.text || '\u00A0'}
                         </TableCell>
                   )
                 ))}
