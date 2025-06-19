@@ -179,8 +179,14 @@ def build_file_index():
         has_txt = {}
         for model in MODEL_NAMES:
             txt_file = f"{base_name}-{model}.txt"
-            txt_paths[model] = os.path.join(IMAGES_DIR, txt_file) if txt_file in all_files else None
-            has_txt[model] = txt_file in all_files
+            txt_path = os.path.join(IMAGES_DIR, txt_file)
+            if txt_file not in all_files:
+                os.makedirs(os.path.dirname(txt_path), exist_ok=True)
+                if not os.path.exists(txt_path):
+                    with open(txt_path, 'w') as f:
+                        f.write("")
+            txt_paths[model] = txt_path
+            has_txt[model] = True
         
         # Use cached stats
         stats = get_cached_file_stats(file_path)
