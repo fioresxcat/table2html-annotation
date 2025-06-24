@@ -635,68 +635,101 @@ const TableEditor = React.forwardRef(({
 
   // Render the table editor
   return (
-    <Box sx={{ height: '100%', overflow: 'hidden' }}>
+    <Box sx={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       {!hideInstructions && (
         <Typography variant="body2" sx={{ p: 1, color: 'text.secondary' }}>
         </Typography>
       )}
       
-      <TableContainer 
-        component={Paper} 
+      <Box 
+        component={Paper}
         sx={{ 
-          height: '100%',
+          flex: 1,
           overflow: 'auto',
-          '& table': {
-            borderCollapse: 'collapse',
-            width: '100%',
+          overflowX: 'scroll',
+          overflowY: 'scroll',
+          // Force scrollbars to always be visible
+          scrollbarWidth: 'auto', // Firefox - use auto for better visibility
+          '&::-webkit-scrollbar': {
+            width: '18px',
+            height: '18px'
           },
-          '& td, & th': {
-            border: '1px solid #e0e0e0',
-            padding: '8px',
-            position: 'relative',
-            lineHeight: '1.5',
-            verticalAlign: 'top'
+          '&::-webkit-scrollbar-track': {
+            backgroundColor: '#f1f1f1',
+            borderRadius: '9px'
           },
-          '& tr': {
-            minHeight: '28px'
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: '#c1c1c1',
+            borderRadius: '9px',
+            border: '3px solid #f1f1f1',
+            '&:hover': {
+              backgroundColor: '#a8a8a8'
+            }
+          },
+          '&::-webkit-scrollbar-corner': {
+            backgroundColor: '#f1f1f1'
           }
         }}
       >
-        <Table>
-              <TableBody>
-                {tableData.rows.map((row, rowIndex) => (
-                  <TableRow key={rowIndex}>
+        <Table
+          sx={{
+            borderCollapse: 'collapse',
+            minWidth: '600px', // Keep this for horizontal scroll trigger
+            width: 'max-content',
+            tableLayout: 'auto',
+            // Ensure consistent cell sizing across both tables
+            '& td, & th': {
+              border: '1px solid #e0e0e0',
+              padding: '8px',
+              position: 'relative',
+              lineHeight: '1.5',
+              verticalAlign: 'top',
+              minWidth: '80px !important', // Force smaller cells with !important
+              maxWidth: '300px !important', // Force max width with !important
+              wordWrap: 'break-word',
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-all',
+            },
+            '& tr': {
+              minHeight: '28px'
+            }
+          }}
+        >
+          <TableBody>
+            {tableData.rows.map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
                 {row.map((cell, colIndex) => (
                   cell && (
-                        <TableCell 
+                    <TableCell 
                       key={`${rowIndex}-${colIndex}`}
                       onClick={(e) => handleCellClick(e, rowIndex, colIndex)}
                       onContextMenu={(e) => handleContextMenu(e, rowIndex, colIndex)}
-                          rowSpan={cell.rowspan}
-                          colSpan={cell.colspan}
+                      rowSpan={cell.rowspan}
+                      colSpan={cell.colspan}
                       component={cell.isHeader ? 'th' : 'td'}
                       align="left"
-                          sx={{
-                            cursor: 'pointer',
-                            lineHeight: '1.5',
+                      sx={{
+                        cursor: 'pointer',
+                        lineHeight: '1.5',
                         backgroundColor: selectedCells.some(
                           c => c.rowIndex === rowIndex && c.colIndex === colIndex
                         ) ? '#e3f2fd' : cell.isHeader ? '#f5f5f5' :
                           (getCellDiff(rowIndex, colIndex) ? HIGHLIGHT_COLORS[modelIndex] : 'inherit'),
-                            '&:hover': {
+                        '&:hover': {
                           backgroundColor: '#f0f7ff',
-                            }
-                          }}
-                        >
+                        }
+                      }}
+                    >
                       {cell.text || '\u00A0'}
-                        </TableCell>
+                    </TableCell>
                   )
                 ))}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
 
       {/* Context Menu */}
       <Menu

@@ -825,9 +825,13 @@ function App() {
                       <>
                         {/* Table Editing Mode */}
                         <Paper sx={{ flex: 1, p: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-                          <Grid container spacing={1} sx={{ flex: 1 }}>
+                          <Grid container spacing={1} sx={{ flex: 1, overflow: 'hidden' }}>
                             {MODEL_NAMES.map((model, idx) => (
-                              <Grid item xs={6} key={model}>
+                              <Grid item xs={6} key={model} sx={{ 
+                                height: '100%',
+                                minWidth: 0,
+                                overflow: 'hidden'
+                              }}>
                                 <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                                     <Typography variant="caption" sx={{ fontWeight: 500 }}>{model}</Typography>
@@ -849,8 +853,16 @@ function App() {
                                         totalTables={dualTables[model].length}
                                         onNavigate={dir => handleDualTableNavigation(model, dir)}
                                       />
-                                      <Box sx={{ flex: 1, overflow: 'auto' }}>
+                                      <Box sx={{ 
+                                        flex: 1, 
+                                        minHeight: 0,
+                                        height: '100%',
+                                        maxHeight: '100%',
+                                        width: '100%',
+                                        minWidth: 0
+                                      }}>
                                         <TableEditor
+                                          key={`${model}-${currentFileId}-table-editor`}
                                           ref={el => tableEditorRefs.current[model] = el}
                                           tableHtml={dualTables[model][dualTableIndices[model]]}
                                           onExportHtml={html => handleDualTableChange(model, html)}
@@ -858,8 +870,9 @@ function App() {
                                           modelIndex={idx}
                                           diffInfo={diffInfo}
                                           onCellEditCommit={handleTableCellEditCommit}
+                                          hideInstructions={true}
                                         />
-                    </Box>
+                                      </Box>
                                     </>
                   ) : (
                                     <Box sx={{ p: 1, textAlign: 'center' }}>
