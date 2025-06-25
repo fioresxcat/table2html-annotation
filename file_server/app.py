@@ -686,7 +686,10 @@ def update_parsed_txt(file_id):
             full_text = outside_text
             for table in tables:
                 full_text = full_text.replace('<TABLE></TABLE>', table, 1)
-                
+
+            # Remove all blank lines before saving
+            full_text = '\n'.join([line for line in full_text.splitlines() if line.strip() != ''])
+
             # Save to model-specific file
             with open(txt_path, 'w', encoding='utf-8') as txt_file:
                 txt_file.write(full_text)
