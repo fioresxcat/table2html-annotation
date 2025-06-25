@@ -546,6 +546,10 @@ function App() {
   };
   const handleDualTableChange = (model, newTableHtml) => {
     setDualTables(prev => {
+      const currentHtml = prev[model][dualTableIndices[model]];
+      if (currentHtml === newTableHtml) {
+        return prev; // No change, avoid update loop
+      }
       const newTables = [...prev[model]];
       newTables[dualTableIndices[model]] = newTableHtml;
       return { ...prev, [model]: newTables };
@@ -624,20 +628,6 @@ function App() {
         toast.success(message);
         // Update savedDualOutsideText for BOTH models to reflect the latest in-memory state
         setSavedDualOutsideText({ ...dualOutsideText, [model]: dualOutsideText[model] });
-        // Recompute diff using in-memory content for both models
-        try {
-          const diffPayload = {};
-          for (const m of MODEL_NAMES) {
-            diffPayload[m] = {
-              outside_text: dualOutsideText[m],
-              tables: dualTables[m]
-            };
-          }
-          const diffResult = await postDiffForContent(diffPayload);
-          if (diffResult.success && diffResult.diff) {
-            setDiffInfo(diffResult.diff);
-          }
-        } catch (e) { /* ignore */ }
       }
       // Update state with latest tables
       setDualTables(prev => ({ ...prev, [model]: latestTables }));
