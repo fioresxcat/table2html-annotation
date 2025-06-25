@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useImperativeHandle, useState, forwardRef } from 'react';
-import { Typography } from '@mui/material';
+import { Typography, IconButton, Tooltip } from '@mui/material';
 import Handsontable from 'handsontable';
 import 'handsontable/dist/handsontable.full.min.css';
+import UndoIcon from '@mui/icons-material/Undo';
+import RedoIcon from '@mui/icons-material/Redo';
 
 // Utility: Parse HTML table to Handsontable data and mergeCells config
 function parseHtmlTableToHot(tableHtml) {
@@ -105,6 +107,8 @@ const TableEditor = forwardRef(({
   const hotInstanceRef = useRef(null);
   // For diff highlighting
   const [lastHtml, setLastHtml] = useState('');
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
   // Parse HTML table to Handsontable data/mergeCells
   function getHotConfigFromHtml(html) {
@@ -135,6 +139,8 @@ const TableEditor = forwardRef(({
       manualColumnMove: true,
       manualRowResize: true,
       manualColumnResize: true,
+      undo: true,
+      undoRedo: true,
       afterChange: (changes, source) => {
         // Only trigger onCellEditCommit for real user edits
         const userSources = ['edit', 'paste', 'autofill', 'UndoRedo.undo', 'UndoRedo.redo'];
@@ -204,6 +210,18 @@ const TableEditor = forwardRef(({
     // eslint-disable-next-line
   }, [tableHtml, diffInfo]);
 
+  // Update undo/redo availability
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (hotInstanceRef.current) {
+        const undoPlugin = hotInstanceRef.current.getPlugin('undoRedo');
+        setCanUndo(undoPlugin && undoPlugin.isUndoAvailable());
+        setCanRedo(undoPlugin && undoPlugin.isRedoAvailable());
+      }
+    }, 300);
+    return () => clearInterval(interval);
+  }, []);
+
   // Expose imperative API
   useImperativeHandle(ref, () => ({
     generateCorrectedHtml: () => {
@@ -213,7 +231,9 @@ const TableEditor = forwardRef(({
       return hotToHtmlTable(data, mergeCells);
     },
     undo: () => hotInstanceRef.current && hotInstanceRef.current.undo(),
-    canUndo: () => hotInstanceRef.current && hotInstanceRef.current.isUndoAvailable()
+    canUndo: () => hotInstanceRef.current && hotInstanceRef.current.isUndoAvailable(),
+    redo: () => hotInstanceRef.current && hotInstanceRef.current.redo(),
+    canRedo: () => hotInstanceRef.current && hotInstanceRef.current.isRedoAvailable(),
   }));
 
   return (
@@ -223,6 +243,23 @@ const TableEditor = forwardRef(({
           Table editing powered by Handsontable
         </Typography>
       )}
+      {/* Undo/Redo Buttons */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', padding: '0 8px 4px 8px' }}>
+        <Tooltip title="Undo">
+          <span>
+            <IconButton size="small" onClick={() => hotInstanceRef.current && hotInstanceRef.current.undo()} disabled={!canUndo}>
+              <UndoIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Redo">
+          <span>
+            <IconButton size="small" onClick={() => hotInstanceRef.current && hotInstanceRef.current.redo()} disabled={!canRedo}>
+              <RedoIcon />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </div>
       <div ref={containerRef} style={{ flex: 1, minHeight: 0, minWidth: 0, width: '100%', height: '100%' }} />
       {/* Diff highlighting styles */}
       <style>{`
